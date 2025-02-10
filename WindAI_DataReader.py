@@ -65,9 +65,7 @@ def dataLoader(data_path, model, Re, foil_n, alpha):
     tri = Delaunay(X1)
     
     for i in range(mesh_sz):
-        G.add_node(i, pos=X1, rho=data[2,i], rho_u=data[3,i], rho_v=data[4,i])
-    
-    
+        G.add_node(i, pos=X1[i], rho=data[2,i], rho_u=data[3,i], rho_v=data[4,i])
     
     # Check each triangle and add edges only if it doesn't intersect the exclusion area
     for simplex in tri.simplices:
@@ -79,12 +77,13 @@ def dataLoader(data_path, model, Re, foil_n, alpha):
             G.add_edge(simplex[0], simplex[1])
             G.add_edge(simplex[1], simplex[2])
             G.add_edge(simplex[2], simplex[0])
-    
+    print('#edges:  ', G.number_of_edges())
+    print('#nodes:  ',G.number_of_nodes())
     tok = time.time()
     pos = nx.get_node_attributes(G, 'pos')
-    print(pos)
+    #print(pos)
     nx.draw(G, pos, with_labels=False, node_size=0.1)
-    plt.plot(Polygon(lm).xy, color='red')
+    plt.plot(lm[:,0], lm[:,1], color='red')
     plt.show()
     print('\n\nElapsed Time to Read 1 AoA: ', tok-tic,' s')
     print(data.shape)
