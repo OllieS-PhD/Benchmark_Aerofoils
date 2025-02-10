@@ -68,3 +68,9 @@ def dataLayout(data_path):
     plt.legend(bbox_to_anchor=(1.25, 1.05), fontsize=12)
     plt.title('Sample Airfoil Geometries from Landmark Data')
     plt.show()
+
+
+if __name__ == '__main__':
+    # Set data path here
+    data_path = 'O:/WindAI_Data/2k/airfoil_2k_data.h5'
+    dataLayout(data_path)

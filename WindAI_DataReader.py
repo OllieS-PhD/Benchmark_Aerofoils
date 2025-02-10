@@ -10,7 +10,6 @@ from scipy.stats import gaussian_kde
 from scipy.spatial import Delaunay
 import time
 import math
-import rounders
 import tqdm
 import sklearn
 from sklearn.preprocessing import StandardScaler
@@ -59,6 +58,8 @@ def dataLoader(data_path, model, Re, foil_n, alpha):
         
         cl = hf[model][Re]['C_l'][foil_n,alpha][()]
         cd = hf[model][Re]['C_d'][foil_n,alpha][()]
+    
+    print(data[2,:])
     
     xk, yk = data[0,:], data[1,:]
     X1 = np.vstack((xk,yk)).T
