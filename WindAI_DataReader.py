@@ -17,6 +17,7 @@ from sklearn.decomposition import PCA
 
 import networkx as nx
 from shapely.geometry import Polygon
+import pyvista as pv
 
 import torch
 import torch.nn as nn
@@ -59,7 +60,7 @@ def dataLoader(data_path, model, Re, foil_n, alpha):
         cl = hf[model][Re]['C_l'][foil_n,alpha][()]
         cd = hf[model][Re]['C_d'][foil_n,alpha][()]
     
-    print(data[2,:])
+        
     
     xk, yk = data[0,:], data[1,:]
     X1 = np.vstack((xk,yk)).T
@@ -78,15 +79,39 @@ def dataLoader(data_path, model, Re, foil_n, alpha):
             G.add_edge(simplex[0], simplex[1])
             G.add_edge(simplex[1], simplex[2])
             G.add_edge(simplex[2], simplex[0])
-    print('#edges:  ', G.number_of_edges())
-    print('#nodes:  ',G.number_of_nodes())
     tok = time.time()
     pos = nx.get_node_attributes(G, 'pos')
     #print(pos)
-    nx.draw(G, pos, with_labels=False, node_size=0.1)
-    plt.plot(lm[:,0], lm[:,1], color='red')
-    plt.show()
+    edge_colors = []
+    for u, v in G.edges():
+    # Use the average of the two connected nodes' values as the edge color value
+        avg_value = (G.nodes[u]["rho_u"] + G.nodes[v]["rho_u"]) / 2
+        edge_colors.append(avg_value)
+    # Normalize edge color values for colormap
+    edge_colors_normalized = np.array(edge_colors)
+    
+    # plt.figure()
+    # nx.draw(G, pos, edge_color=edge_colors_normalized, with_labels=False, node_size=0.10)
+    # plt.show()
+    print('Point Check')
+    print(G.nodes[0]['pos'][0])
+    bc_rho = []
+    bc_u = []
+    bc_v = []
+    for n in G.nodes():
+        if abs(math.sqrt((G.nodes[n]['pos'][0])**2 + (G.nodes[n]['pos'][1])**2) - 300) <=1:
+            print(G.nodes[n]['rho'],'       ',G.nodes[n]['rho_u'],'       ',G.nodes[n]['rho_v'])
+            bc_rho.append(G.nodes[n]['rho'])
+            bc_u.append(G.nodes[n]['rho_u'])
+            bc_v.append(G.nodes[n]['rho_v'])
+    ic = []
+    ic.append(sum(bc_rho)/len(bc_rho))
+    ic.append(sum(bc_u)/len(bc_u))
+    ic.append(sum(bc_v)/len(bc_v))
+    print(ic)
     print('\n\nElapsed Time to Read 1 AoA: ', tok-tic,' s')
+    print('#edges:  ', G.number_of_edges())
+    print('#nodes:  ',G.number_of_nodes())
     print(data.shape)
     print(data.dtype)
     print('cl:  ', cl)
@@ -104,4 +129,4 @@ def dataLoader(data_path, model, Re, foil_n, alpha):
 if __name__ == '__main__':
     # Set data path here
     data_path = 'O:/WindAI_Data/2k/airfoil_2k_data.h5'
-    dataLoader(data_path=data_path, model='trans_model', Re='Re03000000', foil_n=0, alpha=0)
+    dataLoader(data_path=data_path, model='turb_model', Re='Re03000000', foil_n=0, alpha=0)
