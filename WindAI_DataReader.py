@@ -44,7 +44,7 @@ https://github.com/jordan7186/Edgeless-GNN-external/blob/main/utils.py#L646
 https://arxiv.org/pdf/2104.05225
 '''
 def dataLoader(data_path, model, Re, foil_n, alpha):
-    var = ["x","y","rho","rho_u","rho_v"]
+    var = ["x","y","rho","rho_u","rho_v", "e"]
     var_sz = len(var)
     G = nx.Graph()
     #print(range(len(dtype)))
@@ -57,17 +57,18 @@ def dataLoader(data_path, model, Re, foil_n, alpha):
             data[i,:] = hf[model][Re]['flow_field']['{:04d}'.format(foil_n)][var[i]][:,alpha][()]
         #data = torch.Tensor(np.swapaxes(data, 0, 1))
         
+        alf = hf[model][Re]['alpha'][alpha][()]
         cl = hf[model][Re]['C_l'][foil_n,alpha][()]
         cd = hf[model][Re]['C_d'][foil_n,alpha][()]
+    # print(lm)
     
-        
     
     xk, yk = data[0,:], data[1,:]
     X1 = np.vstack((xk,yk)).T
     tri = Delaunay(X1)
     
     for i in range(mesh_sz):
-        G.add_node(i, pos=X1[i], rho=data[2,i], rho_u=data[3,i], rho_v=data[4,i])
+        G.add_node(i, pos=X1[i], rho=data[2,i], rho_u=data[3,i], rho_v=data[4,i], e=data[5,i])
     
     # Check each triangle and add edges only if it doesn't intersect the exclusion area
     for simplex in tri.simplices:
@@ -80,43 +81,60 @@ def dataLoader(data_path, model, Re, foil_n, alpha):
             G.add_edge(simplex[1], simplex[2])
             G.add_edge(simplex[2], simplex[0])
     tok = time.time()
-    pos = nx.get_node_attributes(G, 'pos')
+
     #print(pos)
-    edge_colors = []
-    for u, v in G.edges():
-    # Use the average of the two connected nodes' values as the edge color value
-        avg_value = (G.nodes[u]["rho_u"] + G.nodes[v]["rho_u"]) / 2
-        edge_colors.append(avg_value)
-    # Normalize edge color values for colormap
-    edge_colors_normalized = np.array(edge_colors)
-    
+    # edge_colors = []
+    # for u, v in G.edges():
+    # # Use the average of the two connected nodes' values as the edge color value
+    #     avg_value = (G.nodes[u]["rho_u"] + G.nodes[v]["rho_u"]) / 2
+    #     edge_colors.append(avg_value)
+    # # Normalize edge color values for colormap
+    # edge_colors_normalized = np.array(edge_colors)
     # plt.figure()
     # nx.draw(G, pos, edge_color=edge_colors_normalized, with_labels=False, node_size=0.10)
     # plt.show()
-    print('Point Check')
-    print(G.nodes[0]['pos'][0])
+    node_list = []
+    bc_pos = []
     bc_rho = []
     bc_u = []
     bc_v = []
     for n in G.nodes():
-        if abs(math.sqrt((G.nodes[n]['pos'][0])**2 + (G.nodes[n]['pos'][1])**2) - 300) <=1:
-            print(G.nodes[n]['rho'],'       ',G.nodes[n]['rho_u'],'       ',G.nodes[n]['rho_v'])
+        # if [G.nodes[n]['pos'][0], G.nodes[n]['pos'][1]] in lm:
+        if abs(math.sqrt((G.nodes[n]['pos'][0])**2 + (G.nodes[n]['pos'][1])**2) - 1) <=1:
+            print(G.nodes[n]['rho'],'       ',G.nodes[n]['rho_u'],'       ',G.nodes[n]['rho_v'],'       ',G.nodes[n]['e'])
             bc_rho.append(G.nodes[n]['rho'])
             bc_u.append(G.nodes[n]['rho_u'])
             bc_v.append(G.nodes[n]['rho_v'])
+            bc_pos.append(G.nodes[n]['pos'])
+
+    
     ic = []
     ic.append(sum(bc_rho)/len(bc_rho))
     ic.append(sum(bc_u)/len(bc_u))
     ic.append(sum(bc_v)/len(bc_v))
     print(ic)
+
+    G_init = G.copy()
+    G_init.nodes[:]['rho'] = ic[0]
+    G_init.nodes[:]['rho_u'] = ic[1]
+    G_init.nodes[:]['rho_v'] = ic[2]
+    
+    '''
+    Here G_init needs to be defined so that all of the nodes are set to be the initial conditions
+    uniform density and momentum across the board
+    More importantly, need to work out what it all actually means
+    '''
+    
+    
     print('\n\nElapsed Time to Read 1 AoA: ', tok-tic,' s')
     print('#edges:  ', G.number_of_edges())
     print('#nodes:  ',G.number_of_nodes())
     print(data.shape)
     print(data.dtype)
+    print('alf: ', alf)
     print('cl:  ', cl)
     print('cd:  ', cd)
-    return G, cl, cd
+    return G_init, G, cl, cd
 
 
 
@@ -129,4 +147,4 @@ def dataLoader(data_path, model, Re, foil_n, alpha):
 if __name__ == '__main__':
     # Set data path here
     data_path = 'O:/WindAI_Data/2k/airfoil_2k_data.h5'
-    dataLoader(data_path=data_path, model='turb_model', Re='Re03000000', foil_n=0, alpha=0)
+    dataLoader(data_path=data_path, model='turb_model', Re='Re03000000', foil_n=0, alpha=24)
