@@ -10,7 +10,7 @@ from scipy.stats import gaussian_kde
 from scipy.spatial import Delaunay
 import time
 import math
-import tqdm
+from tqdm import tqdm
 import sklearn
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
@@ -60,48 +60,76 @@ def dataLoader(data_path, model, Re, foil_n, alpha):
         alf = hf[model][Re]['alpha'][alpha][()]
         cl = hf[model][Re]['C_l'][foil_n,alpha][()]
         cd = hf[model][Re]['C_d'][foil_n,alpha][()]
-    # print(lm)
+    print('lm length:   ',len(lm))
+    print('lm shape:   ',lm.shape)
     
+
     
     xk, yk = data[0,:], data[1,:]
     X1 = np.vstack((xk,yk)).T
     tri = Delaunay(X1)
+    plt.figure()
+    plt.plot(xk,yk,'.')
+    plt.plot(lm[:,0], lm[:,1], '-')
+    plt.show()
     
-    for i in range(mesh_sz):
+    for i in tqdm(range(mesh_sz), desc="Adding Nodes"):
         G.add_node(i, pos=X1[i], rho=data[2,i], rho_u=data[3,i], rho_v=data[4,i], e=data[5,i])
-    
+    # for i in range(len(lm)):
+    #     G.add_node(mesh_sz+i, rho = )
+    pos = nx.get_node_attributes(G, 'pos')
     # Check each triangle and add edges only if it doesn't intersect the exclusion area
-    for simplex in tri.simplices:
+    for simplex in tqdm(tri.simplices, desc="Adding Edges"):
         triangle = [X1[simplex[0]], X1[simplex[1]], X1[simplex[2]]]
         triangle_polygon = Polygon(triangle)
         
         # Skip triangles that intersect the exclusion polygon
-        if not Polygon(lm).intersects(triangle_polygon):
+        if not Polygon(lm).intersection(triangle_polygon):
             G.add_edge(simplex[0], simplex[1])
             G.add_edge(simplex[1], simplex[2])
             G.add_edge(simplex[2], simplex[0])
+    print(G.nodes[675]["pos"])
+    for i in range(len(lm)):
+        for nid in G.nodes():
+            print(G.nodes[nid]['pos'][0] == lm[i,0], G.nodes[nid]['pos'][1] == lm[i,1])
+            if G.nodes[nid]['pos'][0] == lm[i,0] and G.nodes[nid]['pos'][1] == lm[i,1]:
+                curr_nid = nid
+                break
+        if i == 0:
+            prev_nid = curr_nid
+            nid0 = curr_nid
+        elif i == len(lm):
+            G.add_edge(curr_nid, nid0)
+        else:
+            G.add_edge(prev_nid, curr_nid)
+        
+    # plt.plot(lm[:,0], lm[:,1],'-')
+    # plt.show()
     tok = time.time()
 
-    #print(pos)
-    # edge_colors = []
-    # for u, v in G.edges():
-    # # Use the average of the two connected nodes' values as the edge color value
-    #     avg_value = (G.nodes[u]["rho_u"] + G.nodes[v]["rho_u"]) / 2
-    #     edge_colors.append(avg_value)
-    # # Normalize edge color values for colormap
-    # edge_colors_normalized = np.array(edge_colors)
-    # plt.figure()
-    # nx.draw(G, pos, edge_color=edge_colors_normalized, with_labels=False, node_size=0.10)
-    # plt.show()
+    
+    edge_colors = []
+    for u, v in tqdm(G.edges(), desc="Processing Edges"):
+    # Use the average of the two connected nodes' values as the edge color value
+        avg_value = (G.nodes[u]["rho_u"] + G.nodes[v]["rho_u"]) / 2
+        edge_colors.append(avg_value)
+    # Normalize edge color values for colormap
+    edge_colors_normalized = np.array(edge_colors)
+    plt.figure()
+    print('here')
+    nx.draw(G, pos=pos, edge_color=edge_colors_normalized, with_labels=False, node_size=0.10)
+    print('here')
+    plt.show()
+    print('here')
     node_list = []
     bc_pos = []
     bc_rho = []
     bc_u = []
     bc_v = []
-    for n in G.nodes():
+    for n in tqdm(G.nodes(), desc="Processing Nodes"):
         # if [G.nodes[n]['pos'][0], G.nodes[n]['pos'][1]] in lm:
         if abs(math.sqrt((G.nodes[n]['pos'][0])**2 + (G.nodes[n]['pos'][1])**2) - 1) <=1:
-            print(G.nodes[n]['rho'],'       ',G.nodes[n]['rho_u'],'       ',G.nodes[n]['rho_v'],'       ',G.nodes[n]['e'])
+            #print(G.nodes[n]['rho'],'       ',G.nodes[n]['rho_u'],'       ',G.nodes[n]['rho_v'],'       ',G.nodes[n]['e'])
             bc_rho.append(G.nodes[n]['rho'])
             bc_u.append(G.nodes[n]['rho_u'])
             bc_v.append(G.nodes[n]['rho_v'])
