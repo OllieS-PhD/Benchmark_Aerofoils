@@ -11,21 +11,13 @@ from scipy.spatial import Delaunay
 import time
 import math
 from tqdm import tqdm
-import sklearn
-from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
+
+import multiprocessing
 
 import networkx as nx
 from shapely.geometry import Polygon, Point
 import pyvista as pv
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
-import torch_geometric.nn as pyg_nn
-import torch_geometric.utils as pyg_utils
-# from torch_geometric import Data
 
 # Set options
 pd.set_option('display.max_columns', None)
@@ -43,7 +35,11 @@ https://pytorch-geometric.readthedocs.io/en/latest/_modules/torch_geometric/load
 https://github.com/jordan7186/Edgeless-GNN-external/blob/main/utils.py#L646
 https://arxiv.org/pdf/2104.05225
 '''
-def dataSorter(data_path_load, data_path_save, model, Re, foil_n, alpha):
+def dataSorter(foil_n, alpha):
+    data_path_load = 'O:/WindAI_Data/raw/airfoil_2k_data.h5'
+    data_path_save = 'O:/WindAI_Data/Processed/Airfoil_'+'{:04d}'.format(foil_n)+'__Processed.h5'
+    model='turb_model'
+    Re='Re03000000'
     var = ["x","y","rho","rho_u","rho_v", "e"]
     var_sz = len(var)
     G = nx.Graph()
@@ -129,24 +125,26 @@ def dataSorter(data_path_load, data_path_save, model, Re, foil_n, alpha):
     #                 Save to Processed                 #
     #                                                   #
     #####################################################
-    adj_matrix = nx.to_numpy_array(G)
+    # adj_matrix = nx.to_numpy_array(G)
     node_attrs = {node: dict(G.nodes[node]) for node in G.nodes()}
     edge_attrs = {(u, v): dict(G.edges[u, v]) for u, v in G.edges()}
     
-    dataset_nm = ('foil_' + '{:04d}'.format(foil_n) + '_AoA_'+ f'{alf}')
-    with h5py.File(data_path_save, 'w') as hf:
-        grp = hf.create_group(dataset_nm)
+    foil_path = ('foil_' + '{:04d}'.format(foil_n))
+    alf_path = ('AoA_'+ f'{alf}')
+    with h5py.File(data_path_save, 'a') as hf:
+        # grp_foil = hf.create_group(foil_path)
+        grp = hf.create_group(alf_path)
         grp.create_dataset('coeffs', data = (cl,cd))
         
         node_group = grp.create_group('node_attributes')
-        for node, attrs in tqdm(node_attrs.items(), desc="Saving Nodes"):
+        for node, attrs in node_attrs.items(): #tqdm(node_attrs.items(), desc="Saving Nodes"):
             node_groupie = node_group.create_group(str(node))
             for key, value in attrs.items():
                 node_groupie.attrs[key] = value
         
         edge_group = grp.create_group('edge_attributes')
         idx = -1
-        for edge, _ in tqdm(edge_attrs.items(), desc="Saving Edges"):
+        for edge, _ in edge_attrs.items(): # tqdm(edge_attrs.items(), desc="Saving Edges"):
             idx+=1
             edge_groupie = edge_group.create_group(str(idx))#, data=np.array(attrs))
             edge_groupie.attrs['u'] = edge[0]
@@ -220,19 +218,76 @@ def dataSorter(data_path_load, data_path_save, model, Re, foil_n, alpha):
 
 
 
-
+def worker(worker_num):
+    start = 0 + (123 * worker_num)
+    end = 123 + (123 * worker_num)
+    for foil_i in range(start, end):
+        print(f"Worker {worker_num} : Foil Number {foil_i}/1830  ")
+        for alph_i in range(24):
+            print(f"Worker {worker_num} : Alpha {alph_i}/24  ")
+            dataSorter(foil_n=foil_i, alpha=alph_i)
 
 
 if __name__ == '__main__':
     # Set data path here
-    data_path_raw = 'O:/WindAI_Data/raw/airfoil_2k_data.h5'
-    data_path_proc = 'O:/WindAI_Data/Processed/Airfoil_Processed.h5'
-    for foil_i in tqdm(range(1830), desc="Foil Number"):
-        for alph_i in tqdm(range(24), desc="Alpha"):
-            print('\n\n')
-            print("###################################################################")
-            print(f"                     Foil Number {foil_i}/1830                               ")
-            print(f"                     Angle of Attack {alph_i-4}                               ")
-            print("###################################################################")
-            dataSorter(data_path_load=data_path_raw, data_path_save=data_path_proc, model='turb_model', Re='Re03000000', foil_n=foil_i, alpha=alph_i)
+    # for foil_i in tqdm(range(23,1830), desc="Foil Number"):
+    #     for alph_i in tqdm(range(24), desc="Alpha"):
+    #         print('\n\n')
+    #         print("###################################################################")
+    #         print(f"                     Foil Number {foil_i}/1830                               ")
+    #         print(f"                     Angle of Attack {alph_i-4}                               ")
+    #         print("###################################################################")
+    #         dataSorter(foil_n=foil_i, alpha=alph_i)
+    p0 = multiprocessing.Process(target = worker, args=(0,))
+    p1 = multiprocessing.Process(target = worker, args=(1,))
+    p2 = multiprocessing.Process(target = worker, args=(2,))
+    p3 = multiprocessing.Process(target = worker, args=(3,))
+    p4 = multiprocessing.Process(target = worker, args=(4,))
+    p5 = multiprocessing.Process(target = worker, args=(5,))
+    p6 = multiprocessing.Process(target = worker, args=(6,))
+    p7 = multiprocessing.Process(target = worker, args=(7,))
+    p8 = multiprocessing.Process(target = worker, args=(8,))
+    p9 = multiprocessing.Process(target = worker, args=(9,))
+    p10 = multiprocessing.Process(target = worker, args=(10,))
+    p11 = multiprocessing.Process(target = worker, args=(11,))
+    p12 = multiprocessing.Process(target = worker, args=(12,))
+    p13 = multiprocessing.Process(target = worker, args=(13,))
+    p14 = multiprocessing.Process(target = worker, args=(14,))
     
+    p0.start()
+    p1.start()
+    p2.start()
+    p3.start()
+    p4.start()
+    p5.start()
+    p6.start()
+    p7.start()
+    p8.start()
+    p9.start()
+    p10.start()
+    p11.start()
+    p12.start()
+    p13.start()
+    p14.start()
+
+    p0.join()
+    p1.join()
+    p2.join()
+    p3.join()
+    p4.join()
+    p5.join()
+    p6.join()
+    p7.join()
+    p8.join()
+    p9.join()
+    p10.join()
+    p11.join()
+    p12.join()
+    p13.join()
+    p14.join()
+    
+    print('\n\n\n')
+    print("#####################################")
+    print("#            Data Loaded            #")
+    print("#####################################")
+
