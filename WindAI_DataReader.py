@@ -37,7 +37,7 @@ https://arxiv.org/pdf/2104.05225
 '''
 def dataSorter(foil_n, alpha):
     data_path_load = 'O:/WindAI_Data/raw/airfoil_2k_data.h5'
-    data_path_save = 'O:/WindAI_Data/Processed/Airfoil_'+'{:04d}'.format(foil_n)+'__Processed.h5'
+    data_path_save = 'C:/WindAI_Data/Processed/Airfoil_'+'{:04d}'.format(foil_n)+'.h5'
     model='turb_model'
     Re='Re03000000'
     var = ["x","y","rho","rho_u","rho_v", "e"]
