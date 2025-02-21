@@ -37,10 +37,10 @@ https://arxiv.org/pdf/2104.05225
 '''
 def dataSorter(foil_n, alpha):
     data_path_load = 'O:/WindAI_Data/raw/airfoil_2k_data.h5'
-    data_path_save = 'E:/Airfoil_'+'{:04d}'.format(foil_n)+'.h5'
+    data_path_save = 'E:/turb_model/Re_3M/Airfoil_'+'{:04d}'.format(foil_n)+'.h5'
     model='turb_model'
     Re='Re03000000'
-    var = ["x","y","rho","rho_u","rho_v", "e"]
+    var = ["x","y","rho","rho_u","rho_v", "e", "omega"]
     var_sz = len(var)
     G = nx.Graph()
     #print(range(len(dtype)))
@@ -68,7 +68,7 @@ def dataSorter(foil_n, alpha):
     # plt.show()
     
     for i in range(mesh_sz): #tqdm(range(mesh_sz), desc="Adding Nodes"):
-        G.add_node(i, pos=X1[i], rho=data[2,i], rho_u=data[3,i], rho_v=data[4,i], e=data[5,i], airfoil = False)
+        G.add_node(i, pos=X1[i], rho=data[2,i], rho_u=data[3,i], rho_v=data[4,i], e=data[5,i], omega=data[6,i], airfoil = False)
     # for i in range(len(lm)):
     #     G.add_node(mesh_sz+i, rho = )
     pos = nx.get_node_attributes(G, 'pos')
@@ -126,8 +126,8 @@ def dataSorter(foil_n, alpha):
     #                                                   #
     #####################################################
     # adj_matrix = nx.to_numpy_array(G)
-    node_attrs = {node: dict(G.nodes[node]) for node in G.nodes()}
-    edge_attrs = {(u, v): dict(G.edges[u, v]) for u, v in G.edges()}
+    # node_attrs = {node: dict(G.nodes[node]) for node in G.nodes()}
+    # edge_attrs = {(u, v): dict(G.edges[u, v]) for u, v in G.edges()}
     edges = list(G.edges())
     edge_arr = np.array(edges)
     att_vars = dict(G.nodes[0]).keys()
@@ -236,11 +236,11 @@ def dataSorter(foil_n, alpha):
 
 
 def worker(worker_num):
-    n_batch = 50
+    n_batch = 122
     start = 0 + ((n_batch + 1)* worker_num)
     end = start + n_batch
     for foil_i in range(start, end):
-        print(f"Worker {worker_num} : Foil Number {foil_i+1}/{n_batch}  ")
+        print(f"Worker {worker_num} : Foil Number {foil_i % (n_batch+1)}/{n_batch}  ")
         for alph_i in range(24):
             print(f"Worker {worker_num} : Alpha {alph_i-4}/20  ")
             dataSorter(foil_n=foil_i, alpha=alph_i)
