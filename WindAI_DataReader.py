@@ -37,7 +37,7 @@ https://arxiv.org/pdf/2104.05225
 '''
 def dataSorter(foil_n, alpha):
     data_path_load = 'O:/WindAI_Data/raw/airfoil_2k_data.h5'
-    data_path_save = 'C:/WindAI_Data/Processed/Airfoil_'+'{:04d}'.format(foil_n)+'.h5'
+    data_path_save = 'E:/Airfoil_'+'{:04d}'.format(foil_n)+'.h5'
     model='turb_model'
     Re='Re03000000'
     var = ["x","y","rho","rho_u","rho_v", "e"]
@@ -128,27 +128,44 @@ def dataSorter(foil_n, alpha):
     # adj_matrix = nx.to_numpy_array(G)
     node_attrs = {node: dict(G.nodes[node]) for node in G.nodes()}
     edge_attrs = {(u, v): dict(G.edges[u, v]) for u, v in G.edges()}
+    edges = list(G.edges())
+    edge_arr = np.array(edges)
+    att_vars = dict(G.nodes[0]).keys()
+    # print(att_vars)
     
-    foil_path = ('foil_' + '{:04d}'.format(foil_n))
+
     alf_path = ('AoA_'+ f'{alf}')
     with h5py.File(data_path_save, 'a') as hf:
         # grp_foil = hf.create_group(foil_path)
         grp = hf.create_group(alf_path)
         grp.create_dataset('coeffs', data = (cl,cd))
+        grp.create_dataset('edges', data=edge_arr)#, compression = "gzip")
         
-        node_group = grp.create_group('node_attributes')
-        for node, attrs in node_attrs.items(): #tqdm(node_attrs.items(), desc="Saving Nodes"):
-            node_groupie = node_group.create_group(str(node))
-            for key, value in attrs.items():
-                node_groupie.attrs[key] = value
+        # Loop through each attribute
+        node_group = grp.create_group('nodes')
+        for att in att_vars:
+            # data = []
+            # for nid in G.nodes():
+            #     data.append(G.nodes[nid][att])
+            att_data = [G.nodes[nid][att] for nid in G.nodes()]
+            node_group.create_dataset(att, data=att_data)#, compression = "gzip")
         
-        edge_group = grp.create_group('edge_attributes')
-        idx = -1
-        for edge, _ in edge_attrs.items(): # tqdm(edge_attrs.items(), desc="Saving Edges"):
-            idx+=1
-            edge_groupie = edge_group.create_group(str(idx))#, data=np.array(attrs))
-            edge_groupie.attrs['u'] = edge[0]
-            edge_groupie.attrs['v'] = edge[1]
+        # #node_group = grp.create_group('node_attributes')
+        # for node, attrs in node_attrs.items(): #tqdm(node_attrs.items(), desc="Saving Nodes"):
+        #     node_groupie = node_group.create_group(str(node))
+        #     for key, value in attrs.items():
+        #         node_groupie.attrs[key] = value
+        
+        
+        
+        
+        # edge_group = grp.create_group('edges')
+        # idx = -1
+        # for edge, _ in edge_attrs.items(): # tqdm(edge_attrs.items(), desc="Saving Edges"):
+        #     idx+=1
+        #     edge_groupie = edge_group.create_group(str(idx))#, data=np.array(attrs))
+        #     edge_groupie.attrs['u'] = edge[0]
+        #     edge_groupie.attrs['v'] = edge[1]
     
     
     
@@ -219,12 +236,13 @@ def dataSorter(foil_n, alpha):
 
 
 def worker(worker_num):
-    start = 0 + (123 * worker_num)
-    end = 123 + (123 * worker_num)
+    n_batch = 50
+    start = 0 + ((n_batch + 1)* worker_num)
+    end = start + n_batch
     for foil_i in range(start, end):
-        print(f"Worker {worker_num} : Foil Number {foil_i}/1830  ")
+        print(f"Worker {worker_num} : Foil Number {foil_i+1}/{n_batch}  ")
         for alph_i in range(24):
-            print(f"Worker {worker_num} : Alpha {alph_i}/24  ")
+            print(f"Worker {worker_num} : Alpha {alph_i-4}/20  ")
             dataSorter(foil_n=foil_i, alpha=alph_i)
 
 
@@ -238,6 +256,7 @@ if __name__ == '__main__':
     #         print(f"                     Angle of Attack {alph_i-4}                               ")
     #         print("###################################################################")
     #         dataSorter(foil_n=foil_i, alpha=alph_i)
+    # dataSorter(0, 0)
     p0 = multiprocessing.Process(target = worker, args=(0,))
     p1 = multiprocessing.Process(target = worker, args=(1,))
     p2 = multiprocessing.Process(target = worker, args=(2,))
