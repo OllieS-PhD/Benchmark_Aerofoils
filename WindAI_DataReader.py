@@ -240,7 +240,7 @@ def worker(worker_num):
     start = 0 + ((n_batch)* worker_num)
     end = start + n_batch
     for foil_i in range(start, end):
-        print(f"Worker {worker_num} : Foil Number {foil_i % (n_batch+1)}/{n_batch}  ")
+        print(f"Worker {worker_num} : Foil Number {foil_i % (n_batch)}/{n_batch}  ")
         for alph_i in range(24):
             print(f"Worker {worker_num} : Alpha {alph_i-4}/20  ")
             dataSorter(foil_n=foil_i, alpha=alph_i)
