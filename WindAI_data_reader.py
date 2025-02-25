@@ -78,8 +78,9 @@ def dataSorter(foil_n, alpha):
     for simplex in tri.simplices: #tqdm(tri.simplices, desc="Adding Edges"):
         triangle = [X1[simplex[0]], X1[simplex[1]], X1[simplex[2]]]
         triangle_polygon = Polygon(triangle)
+        small_aero = aero_poly.buffer(-1e-5)
         # Skip triangles that intersect the exclusion polygon
-        if not aero_poly.intersection(triangle_polygon):
+        if not small_aero.intersection(triangle_polygon):
             if not G.has_edge(simplex[0], simplex[1]): G.add_edge(simplex[0], simplex[1])
             if not G.has_edge(simplex[1], simplex[2]): G.add_edge(simplex[1], simplex[2])
             if not G.has_edge(simplex[2], simplex[0]): G.add_edge(simplex[2], simplex[0])
@@ -91,33 +92,6 @@ def dataSorter(foil_n, alpha):
             G.nodes[nid]['airfoil'] = True
             n_foil_points +=1
     # print(n_foil_points)
-    
-    #(aero_id, aero_pos) = [(nid, G.nodes[nid]['pos']) for nid in G.nodes() if G.nodes[nid]['airfoil']]
-    aero_ids = []
-    aero_pos = []
-    for nid in G.nodes():
-        if G.nodes[nid]['airfoil']:
-            aero_ids.append(nid)
-            aero_pos.append(G.nodes[nid]['pos'])  
-    if n_foil_points==len(aero_ids):
-        for i in range(len(aero_pos)):
-            # for nid in G.nodes():
-            #     if G.nodes[nid]['airfoil']:
-            #         curr_nid = nid
-            #         break
-            curr_nid = aero_ids[i]
-            if i == 0:
-                prev_nid = curr_nid
-                nid0 = curr_nid
-            else:
-                pos_u = G.nodes[curr_nid]['pos']
-                pos_v = G.nodes[nid0 if i ==len(aero_pos) else prev_nid]['pos']
-                edge_len = math.sqrt((pos_u[0] - pos_v[0])**2 + (pos_u[1] - pos_v[1])**2)
-                if i == len(aero_pos):
-                    if edge_len<0.1 and not G.has_edge(curr_nid, nid0) : G.add_edge(curr_nid, nid0)
-                else:
-                    if edge_len<0.1 and not G.has_edge(prev_nid, curr_nid) : G.add_edge(prev_nid, curr_nid)
-            prev_nid = curr_nid
     
     
     #####################################################
@@ -133,7 +107,22 @@ def dataSorter(foil_n, alpha):
     att_vars = dict(G.nodes[0]).keys()
     # print(att_vars)
     
-
+    print_graph = False
+    if print_graph:
+        node_colours = ['red' if G.nodes[node]['airfoil'] else 'blue' for node in G.nodes()]
+        edge_colors = []
+        for u, v in tqdm(G.edges(), desc="Processing Edges"):
+        # Use the average of the two connected nodes' values as the edge color value
+            avg_value = (G.nodes[u]["rho_u"] + G.nodes[v]["rho_u"]) / 2
+            edge_colors.append(avg_value)
+        # Normalize edge color values for colormap
+        edge_colors_normalized = np.array(edge_colors)
+        plt.figure()
+        print('here')
+        nx.draw(G, pos=pos, node_color = node_colours, node_size=10)
+        print('here')
+        plt.show()
+    
     alf_path = ('AoA_'+ f'{alf}')
     with h5py.File(data_path_save, 'a') as hf:
         # grp_foil = hf.create_group(foil_path)
@@ -149,90 +138,8 @@ def dataSorter(foil_n, alpha):
             #     data.append(G.nodes[nid][att])
             att_data = [G.nodes[nid][att] for nid in G.nodes()]
             node_group.create_dataset(att, data=att_data)#, compression = "gzip")
-        
-        # #node_group = grp.create_group('node_attributes')
-        # for node, attrs in node_attrs.items(): #tqdm(node_attrs.items(), desc="Saving Nodes"):
-        #     node_groupie = node_group.create_group(str(node))
-        #     for key, value in attrs.items():
-        #         node_groupie.attrs[key] = value
-        
-        
-        
-        
-        # edge_group = grp.create_group('edges')
-        # idx = -1
-        # for edge, _ in edge_attrs.items(): # tqdm(edge_attrs.items(), desc="Saving Edges"):
-        #     idx+=1
-        #     edge_groupie = edge_group.create_group(str(idx))#, data=np.array(attrs))
-        #     edge_groupie.attrs['u'] = edge[0]
-        #     edge_groupie.attrs['v'] = edge[1]
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-
     # tok = time.time()
-
-    # node_colours = ['red' if G.nodes[node]['airfoil'] else 'blue' for node in G.nodes()]
-    # edge_colors = []
-    # for u, v in tqdm(G.edges(), desc="Processing Edges"):
-    # # Use the average of the two connected nodes' values as the edge color value
-    #     avg_value = (G.nodes[u]["rho_u"] + G.nodes[v]["rho_u"]) / 2
-    #     edge_colors.append(avg_value)
-    # # Normalize edge color values for colormap
-    # edge_colors_normalized = np.array(edge_colors)
-    # plt.figure()
-    # print('here')
-    # nx.draw(G, pos=pos, node_color = node_colours, node_size=10)
-    # print('here')
-    # plt.show()
-    # print('here')
-    # node_list = []
-    # bc_pos = []
-    # bc_rho = []
-    # bc_u = []
-    # bc_v = []
-    # for n in tqdm(G.nodes(), desc="Processing Nodes"):
-    #     # if [G.nodes[n]['pos'][0], G.nodes[n]['pos'][1]] in lm:
-    #     if abs(math.sqrt((G.nodes[n]['pos'][0])**2 + (G.nodes[n]['pos'][1])**2) - 1) <=1:
-    #         #print(G.nodes[n]['rho'],'       ',G.nodes[n]['rho_u'],'       ',G.nodes[n]['rho_v'],'       ',G.nodes[n]['e'])
-    #         bc_rho.append(G.nodes[n]['rho'])
-    #         bc_u.append(G.nodes[n]['rho_u'])
-    #         bc_v.append(G.nodes[n]['rho_v'])
-    #         bc_pos.append(G.nodes[n]['pos'])
-
-    
-    # ic = []
-    # ic.append(sum(bc_rho)/len(bc_rho))
-    # ic.append(sum(bc_u)/len(bc_u))
-    # ic.append(sum(bc_v)/len(bc_v))
-    # print(ic)
-
-    # G_init = G.copy()
-    # G_init.nodes[:]['rho'] = ic[0]
-    # G_init.nodes[:]['rho_u'] = ic[1]
-    # G_init.nodes[:]['rho_v'] = ic[2]
-    
-    
-    # print('\n\nElapsed Time to Read 1 AoA: ', tok-tic,' s')
-    # print('#edges:  ', G.number_of_edges())
-    # print('#nodes:  ',G.number_of_nodes())
-    # print(data.shape)
-    # print(data.dtype)
-    # print('alf: ', alf)
-    # print('cl:  ', cl)
-    # print('cd:  ', cd)
-    #return G, cl, cd
-
-
-
-
 
 
 def worker(worker_num):
@@ -257,6 +164,7 @@ if __name__ == '__main__':
     #         print("###################################################################")
     #         dataSorter(foil_n=foil_i, alpha=alph_i)
     # dataSorter(0, 0)
+    tik = time.time()
     p0 = multiprocessing.Process(target = worker, args=(0,))
     p1 = multiprocessing.Process(target = worker, args=(1,))
     p2 = multiprocessing.Process(target = worker, args=(2,))
@@ -309,4 +217,5 @@ if __name__ == '__main__':
     print("#####################################")
     print("#            Data Loaded            #")
     print("#####################################")
+    print(f'Elapsed Time:       {(time.time()-tik)/3600} hours')
 

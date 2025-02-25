@@ -6,9 +6,10 @@ import math
 from tqdm import tqdm
 import networkx as nx
 import matplotlib.pyplot as plt
+import torch_geometric.utils as pyg_utils
 
 
-def dataLoader(foil_n, alpha):
+def data_loader(foil_n, alpha):
     # Got to load in processed data into here
     alf = alpha-4
     alf_path = f'AoA_{alf}'
@@ -53,7 +54,10 @@ def dataLoader(foil_n, alpha):
         G_init.nodes[node]['e'] = 0
         G_init.nodes[node]['omega'] = 0
     
+    args = {'Ma': Ma_inf,'rho_u': rho_u_inf, 'rho_v': rho_v_inf, 'u': u_inf, 'v': v_inf, 'alpha':alf, 'cl':cl, 'cd':cd}
     
+    data_out = pyg_utils.from_networkx(G)
+    data_in = pyg_utils.from_networkx(G_init)
     
     # node_colours = ['red' if G.nodes[node]['airfoil'] else 'blue' for node in G.nodes()]
     # plt.figure()
@@ -61,7 +65,7 @@ def dataLoader(foil_n, alpha):
     # nx.draw(G, pos=pos, node_color = node_colours, node_size=10)
     # plt.show()
     
-    return G_init, G, cl, cd
+    return data_in, data_out, args
 
 
 if __name__ == "__main__":
