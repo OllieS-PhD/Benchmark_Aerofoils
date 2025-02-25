@@ -11,8 +11,9 @@ import numpy as np
 import networkx as nx
 
 class GNN(nn.Module):
-    def __init__(self, in_dim, h_dim, out_dim):
+    def __init__(self, in_dim, args):
         super(GNN, self).__init__()
+        self.act = getattr(nn, args.act)()
         self.convs = nn.ModuleList()
         
 
