@@ -165,9 +165,9 @@ if __name__ == '__main__':
     #         print("###################################################################")
     #         dataSorter(foil_n=foil_i, alpha=alph_i)
     tik = time.time()
-    for i in range(24):
-        dataSorter(0, i)
-    print(f'Time for one blade:     {(time.time()-tik)/60} mins')
+    # for i in range(24):
+    #     dataSorter(0, i)
+    # print(f'Time for one blade:     {(time.time()-tik)/60} mins')
     p0 = multiprocessing.Process(target = worker, args=(0,))
     p1 = multiprocessing.Process(target = worker, args=(1,))
     p2 = multiprocessing.Process(target = worker, args=(2,))

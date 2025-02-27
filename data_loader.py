@@ -6,38 +6,32 @@ import math
 from tqdm import tqdm
 import networkx as nx
 import matplotlib.pyplot as plt
+import torch
 import torch_geometric.utils as pyg_utils
+from torch_geometric.data import Data
 
 
 def data_loader(foil_n, alpha):
     # Got to load in processed data into here
     alf = alpha-4
     alf_path = f'AoA_{alf}'
-    vars = ["x","y","rho","rho_u","rho_v", "e", "omega", "airfoil"]#,"pos"]
+    vars = ["x","y","rho","rho_u","rho_v", "e", "omega", "airfoil"]
     data_path = 'E:/turb_model/Re_3M/Airfoil_' + '{:04d}'.format(foil_n) + '.h5'
-    G = nx.Graph()
     with h5py.File(data_path, 'r') as hf:
         mesh_sz = hf[alf_path]['nodes']['rho'][()].size
         data = np.empty((len(vars), mesh_sz))
         (cl, cd) = hf[alf_path]['coeffs'][()]
         
         #nodes
-        pos = hf[alf_path]['nodes']['pos'][()]
         for i in tqdm(range(len(vars)), desc='Reading Nodes'):
-            data[:,i] = hf[alf_path]['nodes'][vars[i]][:][()]
-        
-        for i in tqdm(range(mesh_sz), desc="Adding Nodes"):
-            G.add_node(i, pos=pos, rho=data[0,i], rho_u=data[1,i], rho_v=data[2,i], e=data[3,i], omega=data[4,i], airfoil=data[5,i])
+            # print(hf[alf_path]['nodes'][vars[i]][:][()])
+            data[i,:] = hf[alf_path]['nodes'][vars[i]][:][()]
+        g_x = torch.tensor(np.transpose(data))
         
         #edges
-        edge_arr = hf[alf_path]['edges'][()]
-        for edge in tqdm(edge_arr, desc='Adding Edges'):
-            G.add_edge(edge[0], edge[1])
+        edge_arr = np.array(hf[alf_path]['edges'][()])
+        edge_data = torch.tensor(np.transpose(edge_arr))
     
-    
-    G_init = nx.Graph()
-    G_init.add_nodes_from(G)
-    G_init.add_edges_from(G.edges())
     Ma_inf = 0.1
     rho_inf = 1
     rho_u_inf = Ma_inf * math.cos(alf)
@@ -46,27 +40,27 @@ def data_loader(foil_n, alpha):
     vel_inf = Ma_inf * c
     u_inf = vel_inf * math.cos(alf)
     v_inf = vel_inf * math.sin(alf)
-    for node in tqdm(G_init.nodes(), desc='Forming IC Graph'):
-        G_init.nodes[node]['rho'] = rho_inf
-        G_init.nodes[node]['rho_u'] = 0#rho_u_inf
-        G_init.nodes[node]['rho_v'] = 0#rho_v_inf
-        G_init.nodes[node]['e'] = 0
-        G_init.nodes[node]['omega'] = 0
+    
+    #["x","y","rho","rho_u","rho_v", "e", "omega", "airfoil"]
+    d_init = data
+    d_init[2,:] = rho_inf
+    for i in range(3,6):
+        d_init[i,:] = 0
+    ic_x = torch.tensor(np.transpose(d_init))
     
     args = {'Ma': Ma_inf,'rho_u': rho_u_inf, 'rho_v': rho_v_inf, 'u': u_inf, 'v': v_inf, 'alpha':alf, 'cl':cl, 'cd':cd}
     
-    print('Pre')
-    data_out = pyg_utils.from_networkx(G)
-    print('Mid')
-    data_in = pyg_utils.from_networkx(G_init)
-    print('End')
-    # node_colours = ['red' if G.nodes[node]['airfoil'] else 'blue' for node in G.nodes()]
-    # plt.figure()
-    # print('Making Graph')
-    # nx.draw(G, pos=pos, node_color = node_colours, node_size=10)
-    # plt.show()
+    graph_data = Data(x=ic_x, edge_index=edge_data, y=g_x, kwargs=args)
     
-    return data_in, data_out, args
+    # plotter = False
+    # if plotter:
+    #     node_colours = ['red' if data[7,node] else 'blue' for node in range(len(data[7]))]
+    #     plt.figure()
+    #     print('Making Graph')
+    #     nx.draw(G, pos=(data[0,:], data[1,:]), node_color = node_colours, node_size=10) #THIS WON'T WORK
+    #     plt.show()
+    
+    return graph_data
 
 
 if __name__ == "__main__":
