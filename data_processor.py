@@ -67,18 +67,19 @@ def dataSorter(foil_n, alpha):
     # plt.plot(lm[:,0], lm[:,1], '-')
     # plt.show()
     
-    for i in range(mesh_sz): #tqdm(range(mesh_sz), desc="Adding Nodes"):
-        G.add_node(i, pos=X1[i], rho=data[2,i], rho_u=data[3,i], rho_v=data[4,i], e=data[5,i], omega=data[6,i], airfoil = False)
+    for i in tqdm(range(mesh_sz), desc="Adding Nodes"):
+        G.add_node(i, x=xk[i], y=yk[i], rho=data[2,i], rho_u=data[3,i], rho_v=data[4,i], e=data[5,i], omega=data[6,i], airfoil = False)
     # for i in range(len(lm)):
     #     G.add_node(mesh_sz+i, rho = )
-    pos = nx.get_node_attributes(G, 'pos')
+    pos = (nx.get_node_attributes(G, 'x'), nx.get_node_attributes(G, 'y')) 
     
     aero_poly = Polygon(lm)
-        # Check each triangle and add edges only if it doesn't intersect the exclusion area
-    for simplex in tri.simplices: #tqdm(tri.simplices, desc="Adding Edges"):
+    small_aero = aero_poly.buffer(-1e-5)
+    
+    # Check each triangle and add edges only if it doesn't intersect the exclusion area
+    for simplex in tqdm(tri.simplices, desc="Adding Edges"):
         triangle = [X1[simplex[0]], X1[simplex[1]], X1[simplex[2]]]
         triangle_polygon = Polygon(triangle)
-        small_aero = aero_poly.buffer(-1e-5)
         # Skip triangles that intersect the exclusion polygon
         if not small_aero.intersection(triangle_polygon):
             if not G.has_edge(simplex[0], simplex[1]): G.add_edge(simplex[0], simplex[1])
@@ -88,7 +89,7 @@ def dataSorter(foil_n, alpha):
     buff_poly = aero_poly.buffer(buff_dist)
     n_foil_points = 0
     for nid in G.nodes():
-        if buff_poly.contains(Point(G.nodes[nid]['pos'])):
+        if buff_poly.contains( Point( (G.nodes[nid]['x'], G.nodes[nid]['y']) )):
             G.nodes[nid]['airfoil'] = True
             n_foil_points +=1
     # print(n_foil_points)
@@ -132,7 +133,7 @@ def dataSorter(foil_n, alpha):
         
         # Loop through each attribute
         node_group = grp.create_group('nodes')
-        for att in att_vars:
+        for att in tqdm(att_vars, desc='Creating Datasets'):
             # data = []
             # for nid in G.nodes():
             #     data.append(G.nodes[nid][att])
@@ -163,8 +164,10 @@ if __name__ == '__main__':
     #         print(f"                     Angle of Attack {alph_i-4}                               ")
     #         print("###################################################################")
     #         dataSorter(foil_n=foil_i, alpha=alph_i)
-    # dataSorter(0, 0)
     tik = time.time()
+    for i in range(24):
+        dataSorter(0, i)
+    print(f'Time for one blade:     {(time.time()-tik)/60} mins')
     p0 = multiprocessing.Process(target = worker, args=(0,))
     p1 = multiprocessing.Process(target = worker, args=(1,))
     p2 = multiprocessing.Process(target = worker, args=(2,))

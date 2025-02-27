@@ -1,4 +1,4 @@
-import sys
+import time
 import h5py
 import numpy as np
 import pandas as pd
@@ -13,7 +13,7 @@ def data_loader(foil_n, alpha):
     # Got to load in processed data into here
     alf = alpha-4
     alf_path = f'AoA_{alf}'
-    vars = ["rho","rho_u","rho_v", "e", "omega", "airfoil"]#,"pos"]
+    vars = ["x","y","rho","rho_u","rho_v", "e", "omega", "airfoil"]#,"pos"]
     data_path = 'E:/turb_model/Re_3M/Airfoil_' + '{:04d}'.format(foil_n) + '.h5'
     G = nx.Graph()
     with h5py.File(data_path, 'r') as hf:
@@ -23,16 +23,15 @@ def data_loader(foil_n, alpha):
         
         #nodes
         pos = hf[alf_path]['nodes']['pos'][()]
-        for i in range(len(vars)):
-            temp = hf[alf_path]['nodes'][vars[i]][()]
-            data[i,:] = hf[alf_path]['nodes'][vars[i]][:][()]
+        for i in tqdm(range(len(vars)), desc='Reading Nodes'):
+            data[:,i] = hf[alf_path]['nodes'][vars[i]][:][()]
         
-        for i in range(mesh_sz): #tqdm(range(mesh_sz), desc="Adding Nodes"):
+        for i in tqdm(range(mesh_sz), desc="Adding Nodes"):
             G.add_node(i, pos=pos, rho=data[0,i], rho_u=data[1,i], rho_v=data[2,i], e=data[3,i], omega=data[4,i], airfoil=data[5,i])
         
         #edges
         edge_arr = hf[alf_path]['edges'][()]
-        for edge in edge_arr:
+        for edge in tqdm(edge_arr, desc='Adding Edges'):
             G.add_edge(edge[0], edge[1])
     
     
@@ -47,7 +46,7 @@ def data_loader(foil_n, alpha):
     vel_inf = Ma_inf * c
     u_inf = vel_inf * math.cos(alf)
     v_inf = vel_inf * math.sin(alf)
-    for node in G_init.nodes():
+    for node in tqdm(G_init.nodes(), desc='Forming IC Graph'):
         G_init.nodes[node]['rho'] = rho_inf
         G_init.nodes[node]['rho_u'] = 0#rho_u_inf
         G_init.nodes[node]['rho_v'] = 0#rho_v_inf
@@ -56,9 +55,11 @@ def data_loader(foil_n, alpha):
     
     args = {'Ma': Ma_inf,'rho_u': rho_u_inf, 'rho_v': rho_v_inf, 'u': u_inf, 'v': v_inf, 'alpha':alf, 'cl':cl, 'cd':cd}
     
+    print('Pre')
     data_out = pyg_utils.from_networkx(G)
+    print('Mid')
     data_in = pyg_utils.from_networkx(G_init)
-    
+    print('End')
     # node_colours = ['red' if G.nodes[node]['airfoil'] else 'blue' for node in G.nodes()]
     # plt.figure()
     # print('Making Graph')
@@ -75,6 +76,8 @@ if __name__ == "__main__":
         top_groups = [k for k in hf["AoA_0"]['nodes'].keys()]
         print(top_groups)
     
-    foil_n = 25
+    foil_n = 0
     alpha = 0
-    dataLoader(foil_n, alpha)
+    tik = time.time()
+    data_loader(foil_n, alpha)
+    print(f'Time to load 1 AoA:     {time.time()-tik}s')
