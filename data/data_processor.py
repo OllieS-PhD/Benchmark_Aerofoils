@@ -67,7 +67,7 @@ def dataSorter(foil_n, alpha):
     # plt.plot(lm[:,0], lm[:,1], '-')
     # plt.show()
     
-    for i in tqdm(range(mesh_sz), desc="Adding Nodes"):
+    for i in range(mesh_sz):        #tqdm(range(mesh_sz), desc="Adding Nodes"):
         G.add_node(i, x=xk[i], y=yk[i], rho=data[2,i], rho_u=data[3,i], rho_v=data[4,i], e=data[5,i], omega=data[6,i], airfoil = False)
     # for i in range(len(lm)):
     #     G.add_node(mesh_sz+i, rho = )
@@ -77,7 +77,7 @@ def dataSorter(foil_n, alpha):
     small_aero = aero_poly.buffer(-1e-5)
     
     # Check each triangle and add edges only if it doesn't intersect the exclusion area
-    for simplex in tqdm(tri.simplices, desc="Adding Edges"):
+    for simplex in tri.simplices: # tqdm(tri.simplices, desc="Adding Edges"):
         triangle = [X1[simplex[0]], X1[simplex[1]], X1[simplex[2]]]
         triangle_polygon = Polygon(triangle)
         # Skip triangles that intersect the exclusion polygon
@@ -112,7 +112,7 @@ def dataSorter(foil_n, alpha):
     if print_graph:
         node_colours = ['red' if G.nodes[node]['airfoil'] else 'blue' for node in G.nodes()]
         edge_colors = []
-        for u, v in tqdm(G.edges(), desc="Processing Edges"):
+        for u, v in G.edges():   #tqdm(G.edges(), desc="Processing Edges"):
         # Use the average of the two connected nodes' values as the edge color value
             avg_value = (G.nodes[u]["rho_u"] + G.nodes[v]["rho_u"]) / 2
             edge_colors.append(avg_value)
@@ -133,7 +133,7 @@ def dataSorter(foil_n, alpha):
         
         # Loop through each attribute
         node_group = grp.create_group('nodes')
-        for att in tqdm(att_vars, desc='Creating Datasets'):
+        for att in att_vars:        #tqdm(att_vars, desc='Creating Datasets'):
             # data = []
             # for nid in G.nodes():
             #     data.append(G.nodes[nid][att])

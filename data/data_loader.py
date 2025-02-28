@@ -8,7 +8,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import torch
 import torch_geometric.utils as pyg_utils
-from torch_geometric.data import Data
+from torch_geometric.data import Data, Dataset
 
 
 def data_loader(foil_n, alpha):
@@ -23,7 +23,7 @@ def data_loader(foil_n, alpha):
         (cl, cd) = hf[alf_path]['coeffs'][()]
         
         #nodes
-        for i in tqdm(range(len(vars)), desc='Reading Nodes'):
+        for i in range(len(vars)):
             # print(hf[alf_path]['nodes'][vars[i]][:][()])
             data[i,:] = hf[alf_path]['nodes'][vars[i]][:][()]
         g_x = torch.tensor(np.transpose(data))
@@ -48,9 +48,12 @@ def data_loader(foil_n, alpha):
         d_init[i,:] = 0
     ic_x = torch.tensor(np.transpose(d_init))
     
+    xk, yk = data[0,:], data[1,:]
+    pos = np.vstack((xk,yk)).T
+    
     args = {'Ma': Ma_inf,'rho_u': rho_u_inf, 'rho_v': rho_v_inf, 'u': u_inf, 'v': v_inf, 'alpha':alf, 'cl':cl, 'cd':cd}
     
-    graph_data = Data(x=ic_x, edge_index=edge_data, y=g_x, kwargs=args)
+    graph_data = Data( pos=pos, x=ic_x, edge_index=edge_data, y=g_x, kwargs=args)
     
     # plotter = False
     # if plotter:
