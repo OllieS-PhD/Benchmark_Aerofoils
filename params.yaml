@@ -1,6 +1,6 @@
 GraphSAGE:
-  encoder: [7, 64, 64, 8]
-  decoder: [8, 64, 64, 4]
+  encoder: [6, 64, 64, 8]
+  decoder: [8, 64, 64, 6]
 
   nb_hidden_layers: 3
   size_hidden_layers: 64
@@ -13,8 +13,8 @@ GraphSAGE:
   r: 0.05
 
 PointNet:
-  encoder: [7, 64, 64, 8]
-  decoder: [8, 64, 64, 4]
+  encoder: [6, 64, 64, 8]
+  decoder: [8, 64, 64, 6]
 
   base_nb: 8
   batch_size: 1
@@ -23,7 +23,7 @@ PointNet:
   subsampling: 32000
 
 MLP:
-  encoder: [7, 64, 64, 8]
+  encoder: [6, 64, 64, 8]
   decoder: [8, 64, 64, 6]
 
   nb_hidden_layers: 3

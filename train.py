@@ -26,7 +26,7 @@ def get_nb_trainable_params(model):
 
 def train(device, model, train_loader, optimizer, scheduler, criterion = 'MSE', reg = 1):
     model.train()
-    avg_loss_per_var = torch.zeros(4, device = device)
+    avg_loss_per_var = torch.zeros(6, device = device)
     avg_loss = 0
     # avg_loss_surf_var = torch.zeros(4, device = device)
     # avg_loss_vol_var = torch.zeros(4, device = device)
@@ -46,6 +46,8 @@ def train(device, model, train_loader, optimizer, scheduler, criterion = 'MSE', 
         elif criterion == 'MAE':
             loss_criterion = nn.L1Loss(reduction = 'none')
         loss_per_var = loss_criterion(out, targets).mean(dim = 0)
+        # print(f"{loss_per_var=}")
+        # print(f"{loss_per_var.size()=}")
         total_loss = loss_per_var.mean()
         # loss_surf_var = loss_criterion(out[data_clone.surf, :], targets[data_clone.surf, :]).mean(dim = 0)
         # loss_vol_var = loss_criterion(out[~data_clone.surf, :], targets[~data_clone.surf, :]).mean(dim = 0)
@@ -73,7 +75,7 @@ def train(device, model, train_loader, optimizer, scheduler, criterion = 'MSE', 
 @torch.no_grad()
 def test(device, model, test_loader, criterion = 'MSE'):
     model.eval()
-    avg_loss_per_var = np.zeros(4)
+    avg_loss_per_var = np.zeros(6)
     avg_loss = 0
     # avg_loss_surf_var = np.zeros(4)
     # avg_loss_vol_var = np.zeros(4)
@@ -166,7 +168,7 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
             # data_sampled.surf = data_sampled.surf[idx]
 
             if name_mod != 'PointNet' and name_mod != 'MLP':
-                data_sampled.edge_index = nng.radius_graph(x = torch.tensor(data_sampled.pos).to(device), r = hparams['r'], loop = True, max_num_neighbors = int(hparams['max_neighbors'])).cpu()
+                data_sampled.edge_index = nng.radius_graph(x = data_sampled.pos.to(device), r = hparams['r'], loop = True, max_num_neighbors = int(hparams['max_neighbors'])).cpu()
 
                 # if name_mod == 'GNO' or name_mod == 'MGNO':
                 #     x, edge_index = data_sampled.x, data_sampled.edge_index
@@ -269,9 +271,9 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
                 # val_vol_list.append(val_vol)
                 # val_surf_var_list.append(val_surf_var)
                 # val_vol_var_list.append(val_vol_var)
-                pbar_train.set_postfix(train_loss = train_loss)#, loss_surf = loss_surf, val_loss = val_loss, val_surf = val_surf)
+                pbar_train.set_postfix(train_loss = train_loss, val_loss = val_loss)#, loss_surf = loss_surf, val_surf = val_surf)
             else:
-                pbar_train.set_postfix(train_loss = train_loss)#, loss_surf = loss_surf, val_loss = val_loss, val_surf = val_surf)
+                pbar_train.set_postfix(train_loss = train_loss, val_loss = val_loss)#, loss_surf = loss_surf, val_loss = val_loss, val_surf = val_surf)
         else:
             pbar_train.set_postfix(train_loss = train_loss)#, loss_surf = loss_surf)
     
@@ -291,64 +293,64 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
 
     sns.set()
     fig_train_surf, ax_train_surf = plt.subplots(figsize = (20, 5))
-    ax_train_surf.plot(train_loss_surf_list, label = 'Mean loss')
-    ax_train_surf.plot(loss_surf_var_list[:, 0], label = r'$v_x$ loss'); ax_train_surf.plot(loss_surf_var_list[:, 1], label = r'$v_y$ loss')
-    ax_train_surf.plot(loss_surf_var_list[:, 2], label = r'$p$ loss'); ax_train_surf.plot(loss_surf_var_list[:, 3], label = r'$\nu_t$ loss')
+    ax_train_surf.plot(train_loss_list, label = 'Mean loss')
+    # ax_train_surf.plot(loss_surf_var_list[:, 0], label = r'$v_x$ loss'); ax_train_surf.plot(loss_surf_var_list[:, 1], label = r'$v_y$ loss')
+    # ax_train_surf.plot(loss_surf_var_list[:, 2], label = r'$p$ loss'); ax_train_surf.plot(loss_surf_var_list[:, 3], label = r'$\nu_t$ loss')
     ax_train_surf.set_xlabel('epochs')
     ax_train_surf.set_yscale('log')
     ax_train_surf.set_title('Train losses over the surface')
     ax_train_surf.legend(loc = 'best')
     fig_train_surf.savefig(osp.join(path, 'train_loss_surf.png'), dpi = 150, bbox_inches = 'tight')
 
-    fig_train_vol, ax_train_vol = plt.subplots(figsize = (20, 5))
-    ax_train_vol.plot(train_loss_vol_list, label = 'Mean loss')
-    ax_train_vol.plot(loss_vol_var_list[:, 0], label = r'$v_x$ loss'); ax_train_vol.plot(loss_vol_var_list[:, 1], label = r'$v_y$ loss')
-    ax_train_vol.plot(loss_vol_var_list[:, 2], label = r'$p$ loss'); ax_train_vol.plot(loss_vol_var_list[:, 3], label = r'$\nu_t$ loss')
-    ax_train_vol.set_xlabel('epochs')
-    ax_train_vol.set_yscale('log')
-    ax_train_vol.set_title('Train losses over the volume')
-    ax_train_vol.legend(loc = 'best')
-    fig_train_vol.savefig(osp.join(path, 'train_loss_vol.png'), dpi = 150, bbox_inches = 'tight')
+    # fig_train_vol, ax_train_vol = plt.subplots(figsize = (20, 5))
+    # ax_train_vol.plot(train_loss_vol_list, label = 'Mean loss')
+    # ax_train_vol.plot(loss_vol_var_list[:, 0], label = r'$v_x$ loss'); ax_train_vol.plot(loss_vol_var_list[:, 1], label = r'$v_y$ loss')
+    # ax_train_vol.plot(loss_vol_var_list[:, 2], label = r'$p$ loss'); ax_train_vol.plot(loss_vol_var_list[:, 3], label = r'$\nu_t$ loss')
+    # ax_train_vol.set_xlabel('epochs')
+    # ax_train_vol.set_yscale('log')
+    # ax_train_vol.set_title('Train losses over the volume')
+    # ax_train_vol.legend(loc = 'best')
+    # fig_train_vol.savefig(osp.join(path, 'train_loss_vol.png'), dpi = 150, bbox_inches = 'tight')
 
-    if val_iter is not None:
-        fig_val_surf, ax_val_surf = plt.subplots(figsize = (20, 5))
-        ax_val_surf.plot(val_surf_list, label = 'Mean loss')
-        ax_val_surf.plot(val_surf_var_list[:, 0], label = r'$v_x$ loss'); ax_val_surf.plot(val_surf_var_list[:, 1], label = r'$v_y$ loss')
-        ax_val_surf.plot(val_surf_var_list[:, 2], label = r'$p$ loss'); ax_val_surf.plot(val_surf_var_list[:, 3], label = r'$\nu_t$ loss')
-        ax_val_surf.set_xlabel('epochs')
-        ax_val_surf.set_yscale('log')
-        ax_val_surf.set_title('Validation losses over the surface')
-        ax_val_surf.legend(loc = 'best')
-        fig_val_surf.savefig(osp.join(path, 'val_loss_surf.png'), dpi = 150, bbox_inches = 'tight')
+    # if val_iter is not None:
+    #     fig_val_surf, ax_val_surf = plt.subplots(figsize = (20, 5))
+    #     ax_val_surf.plot(val_surf_list, label = 'Mean loss')
+    #     ax_val_surf.plot(val_surf_var_list[:, 0], label = r'$v_x$ loss'); ax_val_surf.plot(val_surf_var_list[:, 1], label = r'$v_y$ loss')
+    #     ax_val_surf.plot(val_surf_var_list[:, 2], label = r'$p$ loss'); ax_val_surf.plot(val_surf_var_list[:, 3], label = r'$\nu_t$ loss')
+    #     ax_val_surf.set_xlabel('epochs')
+    #     ax_val_surf.set_yscale('log')
+    #     ax_val_surf.set_title('Validation losses over the surface')
+    #     ax_val_surf.legend(loc = 'best')
+    #     fig_val_surf.savefig(osp.join(path, 'val_loss_surf.png'), dpi = 150, bbox_inches = 'tight')
 
-        fig_val_vol, ax_val_vol = plt.subplots(figsize = (20, 5))
-        ax_val_vol.plot(val_vol_list, label = 'Mean loss')
-        ax_val_vol.plot(val_vol_var_list[:, 0], label = r'$v_x$ loss'); ax_val_vol.plot(val_vol_var_list[:, 1], label = r'$v_y$ loss')
-        ax_val_vol.plot(val_vol_var_list[:, 2], label = r'$p$ loss'); ax_val_vol.plot(val_vol_var_list[:, 3], label = r'$\nu_t$ loss')
-        ax_val_vol.set_xlabel('epochs')
-        ax_val_vol.set_yscale('log')
-        ax_val_vol.set_title('Validation losses over the volume')
-        ax_val_vol.legend(loc = 'best')
-        fig_val_vol.savefig(osp.join(path, 'val_loss_vol.png'), dpi = 150, bbox_inches = 'tight');
+    #     fig_val_vol, ax_val_vol = plt.subplots(figsize = (20, 5))
+    #     ax_val_vol.plot(val_vol_list, label = 'Mean loss')
+    #     ax_val_vol.plot(val_vol_var_list[:, 0], label = r'$v_x$ loss'); ax_val_vol.plot(val_vol_var_list[:, 1], label = r'$v_y$ loss')
+    #     ax_val_vol.plot(val_vol_var_list[:, 2], label = r'$p$ loss'); ax_val_vol.plot(val_vol_var_list[:, 3], label = r'$\nu_t$ loss')
+    #     ax_val_vol.set_xlabel('epochs')
+    #     ax_val_vol.set_yscale('log')
+    #     ax_val_vol.set_title('Validation losses over the volume')
+    #     ax_val_vol.legend(loc = 'best')
+    #     fig_val_vol.savefig(osp.join(path, 'val_loss_vol.png'), dpi = 150, bbox_inches = 'tight');
         
-        if val_iter is not None:
-            with open(osp.join(path, name_mod + '_log.json'), 'a') as f:
-                json.dump(
-                    {
-                        'regression': 'Total',
-                        'loss': 'MSE',
-                        'nb_parameters': params_model,
-                        'time_elapsed': time_elapsed,
-                        'hparams': hparams,
-                        'train_loss_surf': train_loss_surf_list[-1],
-                        'train_loss_surf_var': loss_surf_var_list[-1],
-                        'train_loss_vol': train_loss_vol_list[-1],
-                        'train_loss_vol_var': loss_vol_var_list[-1],
-                        'val_loss_surf': val_surf_list[-1],
-                        'val_loss_surf_var': val_surf_var_list[-1],
-                        'val_loss_vol': val_vol_list[-1],
-                        'val_loss_vol_var': val_vol_var_list[-1],
-                    }, f, indent = 12, cls = NumpyEncoder
-                )
+    if val_iter is not None:
+        with open(osp.join(path, name_mod + '_log.json'), 'a') as f:
+            json.dump(
+                {
+                    'regression': 'Total',
+                    'loss': 'MSE',
+                    'nb_parameters': params_model,
+                    'time_elapsed': time_elapsed,
+                    'hparams': hparams,
+                    'train_loss': train_loss_list[-1],
+                    # 'train_loss_surf_var': loss_surf_var_list[-1],
+                    # 'train_loss_vol': train_loss_vol_list[-1],
+                    # 'train_loss_vol_var': loss_vol_var_list[-1],
+                    # 'val_loss_surf': val_surf_list[-1],
+                    # 'val_loss_surf_var': val_surf_var_list[-1],
+                    # 'val_loss_vol': val_vol_list[-1],
+                    'val_loss': val_loss_list[-1],
+                }, f, indent = 12, cls = NumpyEncoder
+            )
 
     return model

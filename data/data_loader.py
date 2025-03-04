@@ -24,7 +24,7 @@ def data_loader(foil_n, alpha):
         (cl, cd) = hf[alf_path]['coeffs'][()]
 
         xk, yk = hf[alf_path]['nodes']['x'][:][()], hf[alf_path]['nodes']['y'][:][()]
-        pos = np.vstack((xk,yk)).T
+        pos = torch.tensor(np.vstack((xk,yk)).T)
         
         #nodes
         for i in range(len(vars)-2):
