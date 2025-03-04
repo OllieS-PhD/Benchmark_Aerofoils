@@ -18,8 +18,7 @@ class MLP(torch.nn.Module):
         relu_first (bool, optional): If set to :obj:`True`, ReLU activation is
             applied before batch normalization. (default: :obj:`False`)
     """
-    def __init__(self, channel_list, dropout = 0.,
-                 batch_norm = True, relu_first = False):
+    def __init__(self, channel_list, dropout = 0., batch_norm = True, relu_first = False):
         super().__init__()
         assert len(channel_list) >= 2
         self.channel_list = channel_list

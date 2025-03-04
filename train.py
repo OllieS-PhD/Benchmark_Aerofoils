@@ -28,10 +28,10 @@ def train(device, model, train_loader, optimizer, scheduler, criterion = 'MSE', 
     model.train()
     avg_loss_per_var = torch.zeros(4, device = device)
     avg_loss = 0
-    avg_loss_surf_var = torch.zeros(4, device = device)
-    avg_loss_vol_var = torch.zeros(4, device = device)
-    avg_loss_surf = 0
-    avg_loss_vol = 0
+    # avg_loss_surf_var = torch.zeros(4, device = device)
+    # avg_loss_vol_var = torch.zeros(4, device = device)
+    # avg_loss_surf = 0
+    # avg_loss_vol = 0
     iter = 0
     
     for data in train_loader:
@@ -47,38 +47,38 @@ def train(device, model, train_loader, optimizer, scheduler, criterion = 'MSE', 
             loss_criterion = nn.L1Loss(reduction = 'none')
         loss_per_var = loss_criterion(out, targets).mean(dim = 0)
         total_loss = loss_per_var.mean()
-        loss_surf_var = loss_criterion(out[data_clone.surf, :], targets[data_clone.surf, :]).mean(dim = 0)
-        loss_vol_var = loss_criterion(out[~data_clone.surf, :], targets[~data_clone.surf, :]).mean(dim = 0)
-        loss_surf = loss_surf_var.mean()
-        loss_vol = loss_vol_var.mean()
+        # loss_surf_var = loss_criterion(out[data_clone.surf, :], targets[data_clone.surf, :]).mean(dim = 0)
+        # loss_vol_var = loss_criterion(out[~data_clone.surf, :], targets[~data_clone.surf, :]).mean(dim = 0)
+        # loss_surf = loss_surf_var.mean()
+        # loss_vol = loss_vol_var.mean()
 
-        if criterion == 'MSE_weighted':            
-            (loss_vol + reg*loss_surf).backward()           
-        else:
-            total_loss.backward()
+        # if criterion == 'MSE_weighted':            
+        #     (loss_vol + reg*loss_surf).backward()           
+        # else:
+        total_loss.backward()
         
         optimizer.step()
         scheduler.step()
         avg_loss_per_var += loss_per_var
         avg_loss += total_loss
-        avg_loss_surf_var += loss_surf_var
-        avg_loss_vol_var += loss_vol_var
-        avg_loss_surf += loss_surf
-        avg_loss_vol += loss_vol 
+        # avg_loss_surf_var += loss_surf_var
+        # avg_loss_vol_var += loss_vol_var
+        # avg_loss_surf += loss_surf
+        # avg_loss_vol += loss_vol 
         iter += 1
 
-    return avg_loss.cpu().data.numpy()/iter, avg_loss_per_var.cpu().data.numpy()/iter, avg_loss_surf_var.cpu().data.numpy()/iter, avg_loss_vol_var.cpu().data.numpy()/iter, \
-            avg_loss_surf.cpu().data.numpy()/iter, avg_loss_vol.cpu().data.numpy()/iter
+    return avg_loss.cpu().data.numpy()/iter, avg_loss_per_var.cpu().data.numpy()/iter #, avg_loss_surf_var.cpu().data.numpy()/iter, avg_loss_vol_var.cpu().data.numpy()/iter, \
+            #avg_loss_surf.cpu().data.numpy()/iter, avg_loss_vol.cpu().data.numpy()/iter
 
 @torch.no_grad()
 def test(device, model, test_loader, criterion = 'MSE'):
     model.eval()
     avg_loss_per_var = np.zeros(4)
     avg_loss = 0
-    avg_loss_surf_var = np.zeros(4)
-    avg_loss_vol_var = np.zeros(4)
-    avg_loss_surf = 0
-    avg_loss_vol = 0
+    # avg_loss_surf_var = np.zeros(4)
+    # avg_loss_vol_var = np.zeros(4)
+    # avg_loss_surf = 0
+    # avg_loss_vol = 0
     iter = 0
 
     for data in test_loader:        
@@ -94,20 +94,20 @@ def test(device, model, test_loader, criterion = 'MSE'):
 
         loss_per_var = loss_criterion(out, targets).mean(dim = 0)
         loss = loss_per_var.mean()
-        loss_surf_var = loss_criterion(out[data_clone.surf, :], targets[data_clone.surf, :]).mean(dim = 0)
-        loss_vol_var = loss_criterion(out[~data_clone.surf, :], targets[~data_clone.surf, :]).mean(dim = 0)
-        loss_surf = loss_surf_var.mean()
-        loss_vol = loss_vol_var.mean()  
+        # loss_surf_var = loss_criterion(out[data_clone.surf, :], targets[data_clone.surf, :]).mean(dim = 0)
+        # loss_vol_var = loss_criterion(out[~data_clone.surf, :], targets[~data_clone.surf, :]).mean(dim = 0)
+        # loss_surf = loss_surf_var.mean()
+        # loss_vol = loss_vol_var.mean()  
 
         avg_loss_per_var += loss_per_var.cpu().numpy()
         avg_loss += loss.cpu().numpy()
-        avg_loss_surf_var += loss_surf_var.cpu().numpy()
-        avg_loss_vol_var += loss_vol_var.cpu().numpy()
-        avg_loss_surf += loss_surf.cpu().numpy()
-        avg_loss_vol += loss_vol.cpu().numpy()  
+        # avg_loss_surf_var += loss_surf_var.cpu().numpy()
+        # avg_loss_vol_var += loss_vol_var.cpu().numpy()
+        # avg_loss_surf += loss_surf.cpu().numpy()
+        # avg_loss_vol += loss_vol.cpu().numpy()  
         iter += 1
     
-    return avg_loss/iter, avg_loss_per_var/iter, avg_loss_surf_var/iter, avg_loss_vol_var/iter, avg_loss_surf/iter, avg_loss_vol/iter
+    return avg_loss/iter, avg_loss_per_var/iter#, avg_loss_surf_var/iter, avg_loss_vol_var/iter, avg_loss_surf/iter, avg_loss_vol/iter
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -141,14 +141,16 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
     val_loader = DataLoader(val_dataset, batch_size = 1)
     start = time.time()
 
-    train_loss_surf_list = []
-    train_loss_vol_list = []
-    loss_surf_var_list = []
-    loss_vol_var_list = []
-    val_surf_list = []
-    val_vol_list = []
-    val_surf_var_list = []
-    val_vol_var_list = []
+    # train_loss_surf_list = []
+    # train_loss_vol_list = []
+    # loss_surf_var_list = []
+    # loss_vol_var_list = []
+    # val_surf_list = []
+    # val_vol_list = []
+    # val_surf_var_list = []
+    # val_vol_var_list = []
+    train_loss_list=[]
+    val_loss_list=[]
 
     pbar_train = tqdm(range(hparams['nb_epochs']), position=0)
     for epoch in pbar_train:        
@@ -161,10 +163,10 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
             data_sampled.pos = data_sampled.pos[idx]
             data_sampled.x = data_sampled.x[idx]
             data_sampled.y = data_sampled.y[idx]
-            data_sampled.surf = data_sampled.surf[idx]
+            # data_sampled.surf = data_sampled.surf[idx]
 
             if name_mod != 'PointNet' and name_mod != 'MLP':
-                data_sampled.edge_index = nng.radius_graph(x = data_sampled.pos.to(device), r = hparams['r'], loop = True, max_num_neighbors = int(hparams['max_neighbors'])).cpu()
+                data_sampled.edge_index = nng.radius_graph(x = torch.tensor(data_sampled.pos).to(device), r = hparams['r'], loop = True, max_num_neighbors = int(hparams['max_neighbors'])).cpu()
 
                 # if name_mod == 'GNO' or name_mod == 'MGNO':
                 #     x, edge_index = data_sampled.x, data_sampled.edge_index
@@ -181,20 +183,21 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
         train_loader = DataLoader(train_dataset_sampled, batch_size = hparams['batch_size'], shuffle = True)
         del(train_dataset_sampled)
 
-        train_loss, _, loss_surf_var, loss_vol_var, loss_surf, loss_vol = train(device, model, train_loader, optimizer, lr_scheduler, criterion, reg = reg)        
-        if criterion == 'MSE_weighted':
-            train_loss = reg*loss_surf + loss_vol
+        # train_loss, _, loss_surf_var, loss_vol_var, loss_surf, loss_vol = train(device, model, train_loader, optimizer, lr_scheduler, criterion, reg = reg)        
+        train_loss, _ = train(device, model, train_loader, optimizer, lr_scheduler, criterion, reg = reg)      
+        # if criterion == 'MSE_weighted':
+        #     train_loss = reg*loss_surf + loss_vol
         del(train_loader)
+        train_loss_list.append(train_loss)
+        # train_loss_surf_list.append(loss_surf)
+        # train_loss_vol_list.append(loss_vol)
+        # loss_surf_var_list.append(loss_surf_var)
+        # loss_vol_var_list.append(loss_vol_var)
 
-        train_loss_surf_list.append(loss_surf)
-        train_loss_vol_list.append(loss_vol)
-        loss_surf_var_list.append(loss_surf_var)
-        loss_vol_var_list.append(loss_vol_var)
-  
         if val_iter is not None:
             if epoch%val_iter == val_iter - 1 or epoch == 0:
                 if val_sample:
-                    val_surf_vars, val_vol_vars, val_surfs, val_vols = [], [], [], []
+                    # val_surf_vars, val_vol_vars, val_surfs, val_vols = [], [], [], []
                     for i in range(20):
                         val_dataset_sampled = []
                         for data in val_dataset:
@@ -205,7 +208,7 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
                             data_sampled.pos = data_sampled.pos[idx]
                             data_sampled.x = data_sampled.x[idx]
                             data_sampled.y = data_sampled.y[idx]
-                            data_sampled.surf = data_sampled.surf[idx]
+                            # data_sampled.surf = data_sampled.surf[idx]
 
                             if name_mod != 'PointNet' and name_mod != 'MLP':
                                 data_sampled.edge_index = nng.radius_graph(x = data_sampled.pos.to(device), r = hparams['r'], loop = True, max_num_neighbors = int(hparams['max_neighbors'])).cpu()
@@ -225,16 +228,19 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
                         val_loader = DataLoader(val_dataset_sampled, batch_size = 1, shuffle = True)
                         del(val_dataset_sampled)
 
-                        val_loss, _, val_surf_var, val_vol_var, val_surf, val_vol = test(device, model, val_loader, criterion)
+                        # val_loss, _, val_surf_var, val_vol_var, val_surf, val_vol = test(device, model, val_loader, criterion)
+                        val_loss, _ = test(device, model, val_loader, criterion)
                         del(val_loader)
-                        val_surf_vars.append(val_surf_var)
-                        val_vol_vars.append(val_vol_var)
-                        val_surfs.append(val_surf)
-                        val_vols.append(val_vol)
-                    val_surf_var = np.array(val_surf_vars).mean(axis = 0)
-                    val_vol_var = np.array(val_vol_vars).mean(axis = 0)
-                    val_surf = np.array(val_surfs).mean(axis = 0)
-                    val_vol = np.array(val_vols).mean(axis = 0)
+                    #     val_surf_vars.append(val_surf_var)
+                    #     val_vol_vars.append(val_vol_var)
+                    #     val_surfs.append(val_surf)
+                    #     val_vols.append(val_vol)
+                    # val_surf_var = np.array(val_surf_vars).mean(axis = 0)
+                    # val_vol_var = np.array(val_vol_vars).mean(axis = 0)
+                    # val_surf = np.array(val_surfs).mean(axis = 0)
+                    # val_vol = np.array(val_vols).mean(axis = 0)
+                    
+                    
                 else:
                     # if epoch == 0:
                     #     for data in val_dataset:
@@ -252,24 +258,29 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
 
                     #                 data.edge_attr = torch.cat([x_i - x_j, v_i - v_j, p_i - p_j, sdf_i, sdf_j, v_inf, normal_i, normal_j], dim = 1)
                     #     val_loader = DataLoader(val_dataset, batch_size = 1, shuffle = False)
-                    val_loss, _, val_surf_var, val_vol_var, val_surf, val_vol = test(device, model, val_loader, criterion)
+                    # val_loss, _, val_surf_var, val_vol_var, val_surf, val_vol = test(device, model, val_loader, criterion)
+                    val_loss, _ = test(device, model, val_loader, criterion)
 
-                if criterion == 'MSE_weigthed':
-                    val_loss = reg*val_surf + val_vol
-                val_surf_list.append(val_surf)
-                val_vol_list.append(val_vol)
-                val_surf_var_list.append(val_surf_var)
-                val_vol_var_list.append(val_vol_var)
-                pbar_train.set_postfix(train_loss = train_loss, loss_surf = loss_surf, val_loss = val_loss, val_surf = val_surf)
+                # if criterion == 'MSE_weigthed':
+                #     val_loss = reg*val_surf + val_vol
+                train_loss_list.append(train_loss)
+                val_loss_list.append(val_loss)
+                # val_surf_list.append(val_surf)
+                # val_vol_list.append(val_vol)
+                # val_surf_var_list.append(val_surf_var)
+                # val_vol_var_list.append(val_vol_var)
+                pbar_train.set_postfix(train_loss = train_loss)#, loss_surf = loss_surf, val_loss = val_loss, val_surf = val_surf)
             else:
-                pbar_train.set_postfix(train_loss = train_loss, loss_surf = loss_surf, val_loss = val_loss, val_surf = val_surf)
+                pbar_train.set_postfix(train_loss = train_loss)#, loss_surf = loss_surf, val_loss = val_loss, val_surf = val_surf)
         else:
-            pbar_train.set_postfix(train_loss = train_loss, loss_surf = loss_surf)
-
-    loss_surf_var_list = np.array(loss_surf_var_list)
-    loss_vol_var_list = np.array(loss_vol_var_list)
-    val_surf_var_list = np.array(val_surf_var_list)
-    val_vol_var_list = np.array(val_vol_var_list)
+            pbar_train.set_postfix(train_loss = train_loss)#, loss_surf = loss_surf)
+    
+    train_loss_list = np.array(train_loss_list)
+    val_loss_list = np.array(val_loss_list)
+    # loss_surf_var_list = np.array(loss_surf_var_list)
+    # loss_vol_var_list = np.array(loss_vol_var_list)
+    # val_surf_var_list = np.array(val_surf_var_list)
+    # val_vol_var_list = np.array(val_vol_var_list)
 
     end = time.time()
     time_elapsed = end - start

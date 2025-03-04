@@ -5,7 +5,7 @@ import train, metrics
 import os.path as osp
 
 from data.data_loader import data_loader
-
+# print('torch version:       '+torch.__version__)
 import numpy as np
 
 parser = argparse.ArgumentParser()
@@ -43,10 +43,11 @@ USING OWN DATA HERE, OVERFITTING ON FOIL 0 @ 0 AoA
 coef_norm = None
 train_dataset = []
 val_dataset = []
-t_data = data_loader(0,0)
-train_dataset.append(t_data)
-val_dataset.append(t_data)
-
+for i in range(24):
+    train_dataset.append(data_loader(0,i))
+    val_dataset.append(data_loader(2,i))
+for i in range(24):
+    train_dataset.append(data_loader(1,i))
 # Cuda
 use_cuda = torch.cuda.is_available()
 device = 'cuda:0' if use_cuda else 'cpu'
@@ -58,27 +59,28 @@ else:
 with open('params.yaml', 'r') as f: # hyperparameters of the model
     hparams = yaml.safe_load(f)[args.model]
 
+
 from models.MLP import MLP
 models = []
 for i in range(args.nmodel):
-    encoder = MLP(hparams['encoder'], batch_norm = False)
-    decoder = MLP(hparams['decoder'], batch_norm = False)
+    encoder = MLP(channel_list=hparams['encoder'], batch_norm = False)
+    decoder = MLP(channel_list=hparams['decoder'], batch_norm = False)
 
-    # if args.model == 'GraphSAGE':
-    #     from models.GraphSAGE import GraphSAGE
-    #     model = GraphSAGE(hparams, encoder, decoder)
+    if args.model == 'GraphSAGE':
+        from models.GraphSAGE import GraphSAGE
+        model = GraphSAGE(hparams, encoder, decoder)
     
-    # elif args.model == 'PointNet':
-    #     from models.PointNet import PointNet
-    #     model = PointNet(hparams, encoder, decoder)
+    elif args.model == 'PointNet':
+        from models.PointNet import PointNet
+        model = PointNet(hparams, encoder, decoder)
 
-    # elif args.model == 'MLP':
-    #     from models.NN import NN
-    #     model = NN(hparams, encoder, decoder)
+    elif args.model == 'MLP':
+        from models.NN import NN
+        model = NN(hparams, encoder, decoder)
 
-    # if args.model == 'GUNet':
-    from models.GUNet import GUNet
-    model = GUNet(hparams, encoder, decoder)    
+    if args.model == 'GUNet':
+        from models.GUNet import GUNet
+        model = GUNet(hparams, encoder, decoder)    
 
     
     log_path = osp.join('metrics', args.task, args.model) # path where you want to save log and figures    

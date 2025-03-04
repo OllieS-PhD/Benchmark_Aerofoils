@@ -24,7 +24,7 @@ PointNet:
 
 MLP:
   encoder: [7, 64, 64, 8]
-  decoder: [8, 64, 64, 4]
+  decoder: [8, 64, 64, 6]
 
   nb_hidden_layers: 3
   size_hidden_layers: 64
@@ -35,8 +35,8 @@ MLP:
   subsampling: 32000
 
 GUNet:
-  encoder: [7, 64, 64, 8]
-  decoder: [8, 64, 64, 4]
+  encoder: [6, 64, 64, 8]
+  decoder: [8, 64, 64, 6]
 
   layer: 'SAGE'
   pool: 'random'

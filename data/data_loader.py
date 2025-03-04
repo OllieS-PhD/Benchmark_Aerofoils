@@ -15,22 +15,26 @@ def data_loader(foil_n, alpha):
     # Got to load in processed data into here
     alf = alpha-4
     alf_path = f'AoA_{alf}'
-    vars = ["x","y","rho","rho_u","rho_v", "e", "omega", "airfoil"]
+    vars = ["rho","rho_u","rho_v", "e", "omega", "airfoil"]
+    pos_vars = ["x", "y"]
     data_path = 'E:/turb_model/Re_3M/Airfoil_' + '{:04d}'.format(foil_n) + '.h5'
     with h5py.File(data_path, 'r') as hf:
         mesh_sz = hf[alf_path]['nodes']['rho'][()].size
         data = np.empty((len(vars), mesh_sz))
         (cl, cd) = hf[alf_path]['coeffs'][()]
+
+        xk, yk = hf[alf_path]['nodes']['x'][:][()], hf[alf_path]['nodes']['y'][:][()]
+        pos = np.vstack((xk,yk)).T
         
         #nodes
-        for i in range(len(vars)):
+        for i in range(len(vars)-2):
             # print(hf[alf_path]['nodes'][vars[i]][:][()])
             data[i,:] = hf[alf_path]['nodes'][vars[i]][:][()]
-        g_x = torch.tensor(np.transpose(data))
+        g_x = torch.tensor(np.transpose(data)).to(torch.float32)
         
         #edges
         edge_arr = np.array(hf[alf_path]['edges'][()])
-        edge_data = torch.tensor(np.transpose(edge_arr))
+        edge_data = torch.tensor(edge_arr).to(torch.float32)
     
     Ma_inf = 0.1
     rho_inf = 1
@@ -41,17 +45,26 @@ def data_loader(foil_n, alpha):
     u_inf = vel_inf * math.cos(alf)
     v_inf = vel_inf * math.sin(alf)
     
-    #["x","y","rho","rho_u","rho_v", "e", "omega", "airfoil"]
+    #["rho","rho_u","rho_v", "e", "omega", "airfoil"]
     d_init = data
-    d_init[2,:] = rho_inf
-    for i in range(3,6):
+    d_init[0,:] = rho_inf
+    for i in range(1,5):
         d_init[i,:] = 0
-    ic_x = torch.tensor(np.transpose(d_init))
+    ic_x = torch.tensor(np.transpose(d_init)).to(torch.float32)
     
-    xk, yk = data[0,:], data[1,:]
-    pos = np.vstack((xk,yk)).T
+    # print('-------------------')
+    # print(f'g_x Size:           '+str(g_x.size()))
+    # print(f'ic_x Size:           '+str(ic_x.size()))
+    # print(f'Edge_Arr Size:      '+str(edge_data.size()))
+    # if foil_n == 0 and alpha == 0:
+    #     print(g_x, ic_x)
+    
+    
     
     args = {'Ma': Ma_inf,'rho_u': rho_u_inf, 'rho_v': rho_v_inf, 'u': u_inf, 'v': v_inf, 'alpha':alf, 'cl':cl, 'cd':cd}
+    
+    # g_x = np.transpose(g_x)
+    # ic_x = np.transpose(ic_x.to(torch.float32))
     
     graph_data = Data( pos=pos, x=ic_x, edge_index=edge_data, y=g_x, kwargs=args)
     
