@@ -6,7 +6,7 @@ import random
 def DownSample(id, x, edge_index, pos_x, pool, pool_ratio, r, max_neighbors):
     y = x.clone()
     n = int(x.size(0))
-
+    
     if pool is not None:
         y, _, _, _, id_sampled, _ = pool(y, edge_index)
     else:
@@ -14,7 +14,7 @@ def DownSample(id, x, edge_index, pos_x, pool, pool_ratio, r, max_neighbors):
         id_sampled = random.sample(range(n), k)
         id_sampled = torch.tensor(id_sampled, dtype = torch.long)
         y = y[id_sampled]
-
+    
     pos_x = pos_x[id_sampled]
     id.append(id_sampled)
 
@@ -168,6 +168,7 @@ class GUNet(nn.Module):
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
+        # print(f'forward: {edge_index.size()=}')
         id = []
         edge_index_list = [edge_index.clone()]
         pos_x_list = []

@@ -34,7 +34,7 @@ def data_loader(foil_n, alpha):
         
         #edges
         edge_arr = np.array(hf[alf_path]['edges'][()])
-        edge_data = torch.tensor(edge_arr).to(torch.float32)
+        edge_data = torch.tensor(np.transpose(edge_arr)).to(torch.int)
     
     Ma_inf = 0.1
     rho_inf = 1
@@ -61,11 +61,15 @@ def data_loader(foil_n, alpha):
     
     
     
-    args = {'Ma': Ma_inf,'rho_u': rho_u_inf, 'rho_v': rho_v_inf, 'u': u_inf, 'v': v_inf, 'alpha':alf, 'cl':cl, 'cd':cd}
+    args = {'Ma': Ma_inf,'rho_u': rho_u_inf, 'rho_v': rho_v_inf, 'u': u_inf, 'v': v_inf, 'alpha':alf, 'cl':cl, 'cd':cd, 'foil_n':foil_n, 'alpha':alf}
     
     # g_x = np.transpose(g_x)
     # ic_x = np.transpose(ic_x.to(torch.float32))
-    
+    if alf == 0:
+        print('------------')
+        print(f'{foil_n=}   {alf=}')
+        print(f'{ic_x.size()=}')
+        print(f'{edge_data.size()=}')
     graph_data = Data( pos=pos, x=ic_x, edge_index=edge_data, y=g_x, kwargs=args)
     
     # plotter = False

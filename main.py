@@ -38,7 +38,8 @@ val_dataset = manifest_train[-n:]
 # torch.save(val_dataset, 'Dataset/val_dataset')
 
 '''
-USING OWN DATA HERE, OVERFITTING ON FOIL 0 @ 0 AoA
+USING OWN DATA HERE, OVERFITTING ON 3 foils
+When doing a proper go at it, randomise all 1830 into 2 groups of 80/20% 
 '''
 coef_norm = None
 train_dataset = []
@@ -48,6 +49,10 @@ for i in range(24):
     val_dataset.append(data_loader(2,i))
 for i in range(24):
     train_dataset.append(data_loader(1,i))
+
+
+
+
 # Cuda
 use_cuda = torch.cuda.is_available()
 device = 'cuda:0' if use_cuda else 'cpu'

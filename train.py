@@ -2,6 +2,7 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import networkx as nx
 
 import time, json
 
@@ -24,8 +25,9 @@ def get_nb_trainable_params(model):
     model_parameters = filter(lambda p: p.requires_grad, model.parameters())
     return sum([np.prod(p.size()) for p in model_parameters])
 
-def train(device, model, train_loader, optimizer, scheduler, criterion = 'MSE', reg = 1):
+def train(device, model, train_loader, optimizer, scheduler, criterion = 'RMSE',  reg = 1):
     model.train()
+    final_outs = []
     avg_loss_per_var = torch.zeros(6, device = device)
     avg_loss = 0
     # avg_loss_surf_var = torch.zeros(4, device = device)
@@ -37,12 +39,15 @@ def train(device, model, train_loader, optimizer, scheduler, criterion = 'MSE', 
     for data in train_loader:
         data_clone = data.clone()
         data_clone = data_clone.to(device)          
-        optimizer.zero_grad()  
+        optimizer.zero_grad()
+        # print(f'train_data:     {data.edge_index.size()=}')
         out = model(data_clone)
         targets = data_clone.y
 
         if criterion == 'MSE' or criterion == 'MSE_weighted':
             loss_criterion = nn.MSELoss(reduction = 'none')
+        elif criterion == 'RMSE':
+            loss_criterion = torch.sqrt(nn.MSELoss(reduction = 'none'))
         elif criterion == 'MAE':
             loss_criterion = nn.L1Loss(reduction = 'none')
         loss_per_var = loss_criterion(out, targets).mean(dim = 0)
@@ -73,8 +78,9 @@ def train(device, model, train_loader, optimizer, scheduler, criterion = 'MSE', 
             #avg_loss_surf.cpu().data.numpy()/iter, avg_loss_vol.cpu().data.numpy()/iter
 
 @torch.no_grad()
-def test(device, model, test_loader, criterion = 'MSE'):
+def test(device, model, test_loader, final_epoch, criterion = 'RMSE'):
     model.eval()
+    final_outs = []
     avg_loss_per_var = np.zeros(6)
     avg_loss = 0
     # avg_loss_surf_var = np.zeros(4)
@@ -91,6 +97,8 @@ def test(device, model, test_loader, criterion = 'MSE'):
         targets = data_clone.y
         if criterion == 'MSE' or 'MSE_weighted':
             loss_criterion = nn.MSELoss(reduction = 'none')
+        elif criterion == 'RMSE':
+            loss_criterion = torch.sqrt(nn.MSELoss(reduction = 'none'))
         elif criterion == 'MAE':
             loss_criterion = nn.L1Loss(reduction = 'none')
 
@@ -103,13 +111,14 @@ def test(device, model, test_loader, criterion = 'MSE'):
 
         avg_loss_per_var += loss_per_var.cpu().numpy()
         avg_loss += loss.cpu().numpy()
+        if final_epoch==True:
+            final_outs.append(out)
         # avg_loss_surf_var += loss_surf_var.cpu().numpy()
         # avg_loss_vol_var += loss_vol_var.cpu().numpy()
         # avg_loss_surf += loss_surf.cpu().numpy()
         # avg_loss_vol += loss_vol.cpu().numpy()  
         iter += 1
-    
-    return avg_loss/iter, avg_loss_per_var/iter#, avg_loss_surf_var/iter, avg_loss_vol_var/iter, avg_loss_surf/iter, avg_loss_vol/iter
+    return final_outs, avg_loss/iter, avg_loss_per_var/iter #, avg_loss_surf_var/iter, avg_loss_vol_var/iter, avg_loss_surf/iter, avg_loss_vol/iter
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -117,7 +126,7 @@ class NumpyEncoder(json.JSONEncoder):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
 
-def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MSE', reg = 1, val_iter = 10, name_mod = 'GraphSAGE', val_sample = True):
+def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'RMSE', reg = 1, val_iter = 10, name_mod = 'GraphSAGE', val_sample = True):
     '''
         Args:
         device (str): device on which you want to do the computation.
@@ -155,16 +164,18 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
     val_loss_list=[]
 
     pbar_train = tqdm(range(hparams['nb_epochs']), position=0)
-    for epoch in pbar_train:        
+    for epoch in pbar_train:    
+        final_epoch = True if (epoch+1) == hparams['nb_epochs'] else False
+        print(f'{final_epoch=}')    
         train_dataset_sampled = []
         for data in train_dataset:
             data_sampled = data.clone()
             idx = random.sample(range(data_sampled.x.size(0)), hparams['subsampling'])
             idx = torch.tensor(idx)
-
             data_sampled.pos = data_sampled.pos[idx]
             data_sampled.x = data_sampled.x[idx]
             data_sampled.y = data_sampled.y[idx]
+            
             # data_sampled.surf = data_sampled.surf[idx]
 
             if name_mod != 'PointNet' and name_mod != 'MLP':
@@ -185,7 +196,7 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
         train_loader = DataLoader(train_dataset_sampled, batch_size = hparams['batch_size'], shuffle = True)
         del(train_dataset_sampled)
 
-        # train_loss, _, loss_surf_var, loss_vol_var, loss_surf, loss_vol = train(device, model, train_loader, optimizer, lr_scheduler, criterion, reg = reg)        
+        # train_loss, _, loss_surf_var, loss_vol_var, loss_surf, loss_vol = train(device, model, train_loader, optimizer, lr_scheduler, criterion, reg = reg)
         train_loss, _ = train(device, model, train_loader, optimizer, lr_scheduler, criterion, reg = reg)      
         # if criterion == 'MSE_weighted':
         #     train_loss = reg*loss_surf + loss_vol
@@ -206,10 +217,11 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
                             data_sampled = data.clone()
                             idx = random.sample(range(data_sampled.x.size(0)), hparams['subsampling'])
                             idx = torch.tensor(idx)
-
+                            # print(data.edge_index)
                             data_sampled.pos = data_sampled.pos[idx]
                             data_sampled.x = data_sampled.x[idx]
                             data_sampled.y = data_sampled.y[idx]
+                            # data_sampled.edge_index = data_sampled.edge_index[:,idx]
                             # data_sampled.surf = data_sampled.surf[idx]
 
                             if name_mod != 'PointNet' and name_mod != 'MLP':
@@ -231,7 +243,7 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
                         del(val_dataset_sampled)
 
                         # val_loss, _, val_surf_var, val_vol_var, val_surf, val_vol = test(device, model, val_loader, criterion)
-                        val_loss, _ = test(device, model, val_loader, criterion)
+                        val_outs, val_loss, _ = test(device, model, val_loader, final_epoch, criterion)
                         del(val_loader)
                     #     val_surf_vars.append(val_surf_var)
                     #     val_vol_vars.append(val_vol_var)
@@ -261,7 +273,9 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
                     #                 data.edge_attr = torch.cat([x_i - x_j, v_i - v_j, p_i - p_j, sdf_i, sdf_j, v_inf, normal_i, normal_j], dim = 1)
                     #     val_loader = DataLoader(val_dataset, batch_size = 1, shuffle = False)
                     # val_loss, _, val_surf_var, val_vol_var, val_surf, val_vol = test(device, model, val_loader, criterion)
-                    val_loss, _ = test(device, model, val_loader, criterion)
+                    val_outs, val_loss, _ = test(device, model, val_loader, final_epoch, criterion)
+                print(val_outs.shape())
+                print()
 
                 # if criterion == 'MSE_weigthed':
                 #     val_loss = reg*val_surf + val_vol
@@ -293,14 +307,38 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
 
     sns.set()
     fig_train_surf, ax_train_surf = plt.subplots(figsize = (20, 5))
-    ax_train_surf.plot(train_loss_list, label = 'Mean loss')
+    ax_train_surf.plot(train_loss_list, label = 'Training loss')
+    ax_train_surf.plot(val_loss_list, label = 'Validation loss')
     # ax_train_surf.plot(loss_surf_var_list[:, 0], label = r'$v_x$ loss'); ax_train_surf.plot(loss_surf_var_list[:, 1], label = r'$v_y$ loss')
     # ax_train_surf.plot(loss_surf_var_list[:, 2], label = r'$p$ loss'); ax_train_surf.plot(loss_surf_var_list[:, 3], label = r'$\nu_t$ loss')
     ax_train_surf.set_xlabel('epochs')
     ax_train_surf.set_yscale('log')
-    ax_train_surf.set_title('Train losses over the surface')
+    ax_train_surf.set_title('Mean losses')
     ax_train_surf.legend(loc = 'best')
-    fig_train_surf.savefig(osp.join(path, 'train_loss_surf.png'), dpi = 150, bbox_inches = 'tight')
+    fig_train_surf.savefig(osp.join(path, 'train_loss.png'), dpi = 150, bbox_inches = 'tight')
+    
+    gidx = 4
+    spec_out = val_outs[gidx]
+    pos = spec_out.pos
+    data = spec_out.x
+    edges = spec_out.edge_index
+    G = nx.Graph()
+    for i in range(val_outs.pos.size(dim=0)):
+        G.add_node(i, pos = pos[i],  rho=data[i,0], rho_u=data[i,1], rho_v=data[i,2], e=data[i,3], omega=data[i,4], airfoil = data[i,5])
+    G.add_edges_from(edges)
+    node_colours = ['red' if G.nodes[node]['airfoil'] else 'blue' for node in G.nodes()]
+    edge_colors = []
+    for u, v in G.edges():   #tqdm(G.edges(), desc="Processing Edges"):
+    # Use the average of the two connected nodes' values as the edge color value
+        avg_value = (G.nodes[u]["rho_u"] + G.nodes[v]["rho_u"]) / 2
+        edge_colors.append(avg_value)
+    # Normalize edge color values for colormap
+    edge_colors_normalized = np.array(edge_colors)
+    plt.figure()
+    print('here')
+    nx.draw(G, pos=pos, node_color = node_colours, node_size=10)
+    print('here')
+    plt.show()
 
     # fig_train_vol, ax_train_vol = plt.subplots(figsize = (20, 5))
     # ax_train_vol.plot(train_loss_vol_list, label = 'Mean loss')
