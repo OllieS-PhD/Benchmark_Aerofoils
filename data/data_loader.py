@@ -15,7 +15,7 @@ def data_loader(foil_n, alpha):
     # Got to load in processed data into here
     alf = alpha-4
     alf_path = f'AoA_{alf}'
-    vars = ["rho","rho_u","rho_v", "e", "omega", "airfoil"]
+    vars = ["rho","rho_u","rho_v", "e", "omega"]#, "airfoil"]
     pos_vars = ["x", "y"]
     data_path = 'E:/turb_model/Re_3M/Airfoil_' + '{:04d}'.format(foil_n) + '.h5'
     with h5py.File(data_path, 'r') as hf:
@@ -27,9 +27,10 @@ def data_loader(foil_n, alpha):
         pos = torch.tensor(np.vstack((xk,yk)).T)
         
         #nodes
-        for i in range(len(vars)-2):
+        for i in range(len(vars)):
             # print(hf[alf_path]['nodes'][vars[i]][:][()])
             data[i,:] = hf[alf_path]['nodes'][vars[i]][:][()]
+        foil_geom = hf[alf_path]['nodes']["airfoil"][:][()]
         g_x = torch.tensor(np.transpose(data)).to(torch.float32)
         
         #edges
@@ -48,7 +49,7 @@ def data_loader(foil_n, alpha):
     #["rho","rho_u","rho_v", "e", "omega", "airfoil"]
     d_init = data
     d_init[0,:] = rho_inf
-    for i in range(1,5):
+    for i in range(1,4):
         d_init[i,:] = 0
     ic_x = torch.tensor(np.transpose(d_init)).to(torch.float32)
     
@@ -61,17 +62,19 @@ def data_loader(foil_n, alpha):
     
     
     
-    args = {'Ma': Ma_inf,'rho_u': rho_u_inf, 'rho_v': rho_v_inf, 'u': u_inf, 'v': v_inf, 'alpha':alf, 'cl':cl, 'cd':cd, 'foil_n':foil_n, 'alpha':alf}
+    args = {'Ma': Ma_inf,'rho_u': rho_u_inf, 'rho_v': rho_v_inf, 'u': u_inf, 'v': v_inf, 'cl':cl, 'cd':cd, 'foil_n':foil_n, 'alpha':alf, 'foil_geom':foil_geom}
     
     # g_x = np.transpose(g_x)
     # ic_x = np.transpose(ic_x.to(torch.float32))
-    if alf == 0:
-        print('------------')
-        print(f'{foil_n=}   {alf=}')
-        print(f'{ic_x.size()=}')
-        print(f'{edge_data.size()=}')
     graph_data = Data( pos=pos, x=ic_x, edge_index=edge_data, y=g_x, kwargs=args)
-    
+    # if alf == 0:
+    #     print('------------')
+    #     print(f'{foil_n=}   {alf=}')
+    #     print(f'{ic_x.size()=}')
+    #     print(f'{edge_data.size()=}')
+        # for i in range(5):
+        #     print(f'x {i} {graph_data.x[:,i]}')
+        #     print(f'y {i} {graph_data.y[:,i]}')
     # plotter = False
     # if plotter:
     #     node_colours = ['red' if data[7,node] else 'blue' for node in range(len(data[7]))]

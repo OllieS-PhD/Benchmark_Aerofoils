@@ -29,7 +29,7 @@ def get_nb_trainable_params(model):
 def train(device, model, train_loader, optimizer, scheduler, criterion = 'RMSE',  reg = 1):
     model.train()
     final_outs = []
-    avg_loss_per_var = torch.zeros(6, device = device)
+    avg_loss_per_var = torch.zeros(5, device = device)
     avg_loss = 0
     iter = 0
     
@@ -64,7 +64,7 @@ def train(device, model, train_loader, optimizer, scheduler, criterion = 'RMSE',
 def test(device, model, test_loader, final_epoch, criterion = 'RMSE'):
     model.eval()
     final_outs = []
-    avg_loss_per_var = np.zeros(6)
+    avg_loss_per_var = np.zeros(5)
     avg_loss = 0
     iter = 0
 
@@ -72,7 +72,6 @@ def test(device, model, test_loader, final_epoch, criterion = 'RMSE'):
         data_clone = data.clone()
         data_clone = data_clone.to(device)
         out = model(data_clone)       
-
         targets = data_clone.y
         if criterion == 'MSE' or 'MSE_weighted':
             loss_criterion = nn.MSELoss(reduction = 'none')
@@ -229,29 +228,45 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'RM
     ax_train_surf.legend(loc = 'best')
     fig_train_surf.savefig(osp.join(path, 'train_loss.png'), dpi = 150, bbox_inches = 'tight')
     
-    gidx = 4
-    spec_out = val_outs[gidx]
-    print(spec_out)
+    from matplotlib.colors import Normalize
+    gidx = 0
+    spec_out = val_outs[gidx].cpu()
+    for i in range(5):
+        print(i, spec_out.x[:,i])
     pos = spec_out.pos
     data = spec_out.x
-    edges = tuple(spec_out.edge_index)
-    print(edges)
+    # npedges = spec_out.edge_index.numpy()
+    edges = spec_out.edge_index#tuple(map(tuple, npedges.tolist()))
     G = nx.Graph()
     for i in range(len(pos)):
-        G.add_node(i, pos = pos[i],  rho=data[i,0], rho_u=data[i,1], rho_v=data[i,2], e=data[i,3], omega=data[i,4], airfoil = data[i,5])
-    G.add_edges_from(edges)
-    node_colours = ['red' if G.nodes[node]['airfoil'] else 'blue' for node in G.nodes()]
-    edge_colors = []
-    for u, v in G.edges():   #tqdm(G.edges(), desc="Processing Edges"):
-    # Use the average of the two connected nodes' values as the edge color value
-        avg_value = (G.nodes[u]["rho_u"] + G.nodes[v]["rho_u"]) / 2
-        edge_colors.append(avg_value)
-    # Normalize edge color values for colormap
-    edge_colors_normalized = np.array(edge_colors)
+        G.add_node(i, pos = pos[i],  rho=data[i,0], rho_u=data[i,1], rho_v=data[i,2], e=data[i,3], omega=data[i,4])
+    for i in range(len(edges[0])):
+        u_add = edges[0,i].item()
+        v_add = edges[1,i].item()
+        G.add_edge(u_add,v_add)
+    node_values = data[:,1]
+    # node_values = G.nodes[:]['rho_u']
+    cmap=plt.cm.get_cmap('jet')
+    # Create a Normalize object
+    vmin = min(node_values)
+    vmax=max(node_values)
+    norm = Normalize(vmin, vmax)
+    # Normalize the values
+    node_colours = norm(node_values)
+    node_colours = cmap(node_colours)
+    
+    edge_colours = []
+    for u, v in G.edges():
+        start_val = norm(node_values[u])
+        end_val = norm(node_values[v])
+        edge_color = cmap((start_val + end_val) / 2)
+        edge_colours.append(edge_color)
+    print(len(edge_colours))
+    print(len(edges), len(edges[0]))
+    print('Drawing graph')
     plt.figure()
-    print('here')
-    nx.draw(G, pos=pos, node_color = node_colours, node_size=10)
-    print('here')
+    nx.draw(G, pos=pos, node_color = node_colours, edge_color = edge_colours, node_size=10)#, cmap=cmap)
+    # nx.draw_networkx_edges(G, pos=pos, edge_color = edge_colours)#, cmap=cmap)#, node_size=10)
     plt.show()
 
     # fig_train_vol, ax_train_vol = plt.subplots(figsize = (20, 5))

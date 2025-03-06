@@ -35,8 +35,8 @@ MLP:
   subsampling: 32000
 
 GUNet:
-  encoder: [6, 64, 64, 8]
-  decoder: [8, 64, 64, 6]
+  encoder: [5, 64, 64, 8]
+  decoder: [8, 64, 64, 5]
 
   layer: 'SAGE'
   pool: 'random'
@@ -50,6 +50,6 @@ GUNet:
   batch_size: 1
   nb_epochs: 1
   lr: 0.001
-  max_neighbors: 5
+  max_neighbors: 3
   subsampling: 32000
   r: 0.05
