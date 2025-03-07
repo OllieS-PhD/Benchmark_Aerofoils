@@ -1,0 +1,47 @@
+{
+            "regression": "Total",
+            "loss": "MSE",
+            "nb_parameters": 65757.0,
+            "time_elapsed": 113.3132209777832,
+            "hparams": {
+                        "encoder": [
+                                    5,
+                                    64,
+                                    64,
+                                    8
+                        ],
+                        "decoder": [
+                                    8,
+                                    64,
+                                    64,
+                                    5
+                        ],
+                        "layer": "SAGE",
+                        "pool": "random",
+                        "nb_scale": 5,
+                        "pool_ratio": [
+                                    0.5,
+                                    0.5,
+                                    0.5,
+                                    0.5
+                        ],
+                        "list_r": [
+                                    0.05,
+                                    0.2,
+                                    0.5,
+                                    1,
+                                    10
+                        ],
+                        "size_hidden_layers": 8,
+                        "batchnorm": true,
+                        "res": false,
+                        "batch_size": 1,
+                        "nb_epochs": 1,
+                        "lr": 0.001,
+                        "max_neighbors": 64,
+                        "subsampling": 32000,
+                        "r": 0.05
+            },
+            "train_loss": 19768.703125,
+            "val_loss": 4882.336893717448
+}

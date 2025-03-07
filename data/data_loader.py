@@ -22,7 +22,8 @@ def data_loader(foil_n, alpha):
         mesh_sz = hf[alf_path]['nodes']['rho'][()].size
         data = np.empty((len(vars), mesh_sz))
         (cl, cd) = hf[alf_path]['coeffs'][()]
-
+        lmx, lmy = hf[alf_path]['lm']['x'][:][()], hf[alf_path]['lm']['y'][:][()]
+        lm = torch.tensor(np.vstack((lmx,lmy)).T)
         xk, yk = hf[alf_path]['nodes']['x'][:][()], hf[alf_path]['nodes']['y'][:][()]
         pos = torch.tensor(np.vstack((xk,yk)).T)
         
@@ -35,7 +36,7 @@ def data_loader(foil_n, alpha):
         
         #edges
         edge_arr = np.array(hf[alf_path]['edges'][()])
-        edge_data = torch.tensor(np.transpose(edge_arr)).to(torch.int)
+        edge_data = torch.tensor(np.transpose(edge_arr)).to(torch.int64)
     
     Ma_inf = 0.1
     rho_inf = 1
@@ -53,21 +54,27 @@ def data_loader(foil_n, alpha):
         d_init[i,:] = 0
     ic_x = torch.tensor(np.transpose(d_init)).to(torch.float32)
     
-    # print('-------------------')
-    # print(f'g_x Size:           '+str(g_x.size()))
-    # print(f'ic_x Size:           '+str(ic_x.size()))
-    # print(f'Edge_Arr Size:      '+str(edge_data.size()))
-    # if foil_n == 0 and alpha == 0:
-    #     print(g_x, ic_x)
-    
-    
-    
-    args = {'Ma': Ma_inf,'rho_u': rho_u_inf, 'rho_v': rho_v_inf, 'u': u_inf, 'v': v_inf, 'cl':cl, 'cd':cd, 'foil_n':foil_n, 'alpha':alf, 'foil_geom':foil_geom}
+    args = {
+        'pos': pos,
+        'x': ic_x,
+        'edge_index': edge_data,
+        'y': g_x,
+        'lm': lm,
+        'Ma': Ma_inf,
+        'rho_u': rho_u_inf, 
+        'rho_v': rho_v_inf, 
+        'u': u_inf, 'v': v_inf, 
+        'cl':cl, 'cd':cd, 
+        'foil_n':foil_n, 
+        'alpha':alf, 
+        'foil_geom':foil_geom}
     
     # g_x = np.transpose(g_x)
     # ic_x = np.transpose(ic_x.to(torch.float32))
-    graph_data = Data( pos=pos, x=ic_x, edge_index=edge_data, y=g_x, kwargs=args)
-    # if alf == 0:
+    graph_data = Data(**args)
+    
+    # print('t1')
+    # if alf == -4:
     #     print('------------')
     #     print(f'{foil_n=}   {alf=}')
     #     print(f'{ic_x.size()=}')

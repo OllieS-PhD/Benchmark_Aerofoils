@@ -1,6 +1,6 @@
 GraphSAGE:
-  encoder: [6, 64, 64, 8]
-  decoder: [8, 64, 64, 6]
+  encoder: [5, 64, 64, 8]
+  decoder: [8, 64, 64, 5]
 
   nb_hidden_layers: 3
   size_hidden_layers: 64
@@ -13,8 +13,8 @@ GraphSAGE:
   r: 0.05
 
 PointNet:
-  encoder: [6, 64, 64, 8]
-  decoder: [8, 64, 64, 6]
+  encoder: [5, 64, 64, 8]
+  decoder: [8, 64, 64, 5]
 
   base_nb: 8
   batch_size: 1
@@ -23,8 +23,8 @@ PointNet:
   subsampling: 32000
 
 MLP:
-  encoder: [6, 64, 64, 8]
-  decoder: [8, 64, 64, 6]
+  encoder: [5, 64, 64, 8]
+  decoder: [8, 64, 64, 5]
 
   nb_hidden_layers: 3
   size_hidden_layers: 64
@@ -48,8 +48,8 @@ GUNet:
   res: False
 
   batch_size: 1
-  nb_epochs: 1
+  nb_epochs: 398
   lr: 0.001
-  max_neighbors: 3
+  max_neighbors: 64
   subsampling: 32000
   r: 0.05

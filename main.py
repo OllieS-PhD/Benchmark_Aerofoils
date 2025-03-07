@@ -44,12 +44,16 @@ When doing a proper go at it, randomise all 1830 into 2 groups of 80/20%
 coef_norm = None
 train_dataset = []
 val_dataset = []
-for i in range(1):
-    train_dataset.append(data_loader(0,i))
-    val_dataset.append(data_loader(2,i))
-# for i in range(24):
-#     train_dataset.append(data_loader(1,i))
+for foil in range(23):
+    for i in range(24):
+        train_dataset.append(data_loader(foil,i))
+        
+for foil in range(24, 30):
+    for i in range(24):
+        val_dataset.append(data_loader(foil,i))
 
+print('-----------------------------------------')
+print('Running: '+ args.model)
 
 # Cuda
 use_cuda = torch.cuda.is_available()

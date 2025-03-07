@@ -72,7 +72,7 @@ def dataSorter(foil_n, alpha):
     # for i in range(len(lm)):
     #     G.add_node(mesh_sz+i, rho = )
     pos = (nx.get_node_attributes(G, 'x'), nx.get_node_attributes(G, 'y')) 
-    
+
     aero_poly = Polygon(lm)
     small_aero = aero_poly.buffer(-1e-5)
     
@@ -131,6 +131,9 @@ def dataSorter(foil_n, alpha):
         grp.create_dataset('coeffs', data = (cl,cd))
         grp.create_dataset('edges', data=edge_arr)#, compression = "gzip")
         
+        lm_grp = grp.create_group('lm')
+        lm_grp.create_dataset('x', data=lm[:,0])
+        lm_grp.create_dataset('y', data=lm[:,1])
         # Loop through each attribute
         node_group = grp.create_group('nodes')
         for att in att_vars:        #tqdm(att_vars, desc='Creating Datasets'):
@@ -166,7 +169,8 @@ if __name__ == '__main__':
     #         dataSorter(foil_n=foil_i, alpha=alph_i)
     tik = time.time()
     # for i in range(24):
-    #     dataSorter(0, i)
+    # dataSorter(0, 1)
+    # exit()
     # print(f'Time for one blade:     {(time.time()-tik)/60} mins')
     p0 = multiprocessing.Process(target = worker, args=(0,))
     p1 = multiprocessing.Process(target = worker, args=(1,))
