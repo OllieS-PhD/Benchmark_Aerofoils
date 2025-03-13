@@ -17,7 +17,7 @@ def data_loader(foil_n, alpha):
     alf_path = f'AoA_{alf}'
     vars = ["rho","rho_u","rho_v", "e", "omega"]#, "airfoil"]
     pos_vars = ["x", "y"]
-    data_path = 'E:/turb_model/Re_3M/Airfoil_' + '{:04d}'.format(foil_n) + '.h5'
+    data_path = 'E:/turb_model/minimal/Airfoil_' + '{:04d}'.format(foil_n) + '.h5'
     with h5py.File(data_path, 'r') as hf:
         mesh_sz = hf[alf_path]['nodes']['rho'][()].size
         data = np.empty((len(vars), mesh_sz))
@@ -38,6 +38,7 @@ def data_loader(foil_n, alpha):
         edge_arr = np.array(hf[alf_path]['edges'][()])
         edge_data = torch.tensor(np.transpose(edge_arr)).to(torch.int64)
     
+    Re = 3e6
     Ma_inf = 0.1
     rho_inf = 1
     rho_u_inf = Ma_inf * math.cos(alf)
@@ -47,12 +48,20 @@ def data_loader(foil_n, alpha):
     u_inf = vel_inf * math.cos(alf)
     v_inf = vel_inf * math.sin(alf)
     
-    #["rho","rho_u","rho_v", "e", "omega", "airfoil"]
+    #["rho","rho_u","rho_v", "e", "omega"]
     d_init = data
     d_init[0,:] = rho_inf
-    for i in range(1,4):
-        d_init[i,:] = 0
+    d_init[1,:] = rho_u_inf
+    d_init[2,:] = rho_v_inf
+    d_init[3,:] = 0
+    print(f'{d_init=}')
+
+    # for i in range(1,4):
+    #     d_init[i,:] = 0
     ic_x = torch.tensor(np.transpose(d_init)).to(torch.float32)
+    
+    print(f'{g_x=}')
+    print(f'{ic_x=}')
     
     args = {
         'pos': pos,
@@ -60,6 +69,7 @@ def data_loader(foil_n, alpha):
         'edge_index': edge_data,
         'y': g_x,
         'lm': lm,
+        'Re': Re,
         'Ma': Ma_inf,
         'rho_u': rho_u_inf, 
         'rho_v': rho_v_inf, 

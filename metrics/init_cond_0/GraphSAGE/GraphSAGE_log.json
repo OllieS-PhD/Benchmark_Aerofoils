@@ -1,8 +1,8 @@
 {
             "regression": "Total",
             "loss": "MSE",
-            "nb_parameters": 19925.0,
-            "time_elapsed": 4.541876316070557,
+            "nb_parameters": 29141.0,
+            "time_elapsed": 29555.661680936813,
             "hparams": {
                         "encoder": [
                                     5,
@@ -19,11 +19,13 @@
                         "nb_hidden_layers": 3,
                         "size_hidden_layers": 64,
                         "batch_size": 1,
-                        "nb_epochs": 1,
+                        "nb_epochs": 398,
                         "lr": 0.001,
+                        "max_neighbors": 5,
                         "bn_bool": true,
-                        "subsampling": 32000
+                        "subsampling": 32000,
+                        "r": 0.05
             },
-            "train_loss": 19762.05859375,
-            "val_loss": 4867.441019694011
+            "train_loss": 0.511194312054178,
+            "val_loss": 12.570855859460103
 }

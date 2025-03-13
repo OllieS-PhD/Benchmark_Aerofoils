@@ -115,7 +115,6 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'RM
         name_mod (str, optional): type of model. Default: 'GraphSAGE'.
     '''
     Path(path).mkdir(parents = True, exist_ok = True)
-
     model = Net.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr = hparams['lr'])
     lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
@@ -128,27 +127,28 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'RM
 
     train_loss_list=[]
     val_loss_list=[]
+    val_epochs = []
 
     pbar_train = tqdm(range(hparams['nb_epochs']), position=0)
     for epoch in pbar_train:    
         final_epoch = True if (epoch+1) == hparams['nb_epochs'] else False
-        # train_dataset_sampled = []
+        train_dataset_sampled = []
         for data in train_dataset:
-            # data_sampled = data.clone()
+            data_sampled = data.clone()
             # idx = random.sample(range(data_sampled.x.size(0)), hparams['subsampling'])
             # idx = torch.tensor(idx)
-            # data_sampled.pos = data_sampled.pos[idx]
-            # data_sampled.x = data_sampled.x[idx]
-            # data_sampled.y = data_sampled.y[idx]
+            # data_sampled.pos = data_sampled.pos[idx].to(device)
+            # data_sampled.x = data_sampled.x[idx].to(device)
+            # data_sampled.y = data_sampled.y[idx].to(device)
             
             # data_sampled.surf = data_sampled.surf[idx]
 
             if name_mod != 'PointNet' and name_mod != 'MLP':
                 data.edge_index = nng.radius_graph(x = data.pos.to(device), r = hparams['r'], loop = True, max_num_neighbors = int(hparams['max_neighbors'])).cpu()
             
-            # train_dataset_sampled.append(data_sampled)
-        train_loader = DataLoader(train_dataset, batch_size = hparams['batch_size'], shuffle = True)
-        # del(train_dataset)
+            train_dataset_sampled.append(data_sampled)
+        train_loader = DataLoader(train_dataset_sampled, batch_size = hparams['batch_size'], shuffle = True)
+        del(train_dataset_sampled)
 
         train_loss, _ = train(device, model, train_loader, optimizer, lr_scheduler, criterion, reg = reg)      
 
@@ -161,31 +161,26 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'RM
                 if val_sample:
                     # val_surf_vars, val_vol_vars, val_surfs, val_vols = [], [], [], []
                     for i in range(20):
-                        # val_dataset_sampled = []
+                        val_dataset_sampled = []
                         for data in val_dataset:
-                            # data_sampled = data.clone()
+                            data_sampled = data.clone()
                             # idx = random.sample(range(data_sampled.x.size(0)), hparams['subsampling'])
                             # idx = torch.tensor(idx)
-                            # # print(data.edge_index)
-                            # data_sampled.pos = data_sampled.pos[idx]
-                            # data_sampled.x = data_sampled.x[idx]
-                            # data_sampled.y = data_sampled.y[idx]
-                            # data_sampled.edge_index = data_sampled.edge_index[:,idx]
-                            # data_sampled.surf = data_sampled.surf[idx]
-
-                            if name_mod == 'PointNet' or name_mod == 'MLP':
-                                del(data.edge_index)
-                            elif name_mod == 'GUNet':
+                            # data_sampled.pos = data_sampled.pos[idx].to(device)
+                            # data_sampled.x = data_sampled.x[idx].to(device)
+                            # data_sampled.y = data_sampled.y[idx].to(device)
+                            
+                            if name_mod != 'PointNet' and name_mod != 'MLP':
                                 data.edge_index = nng.radius_graph(x = data.pos.to(device), r = hparams['r'], loop = True, max_num_neighbors = int(hparams['max_neighbors'])).cpu()
                             
-                            # val_dataset_sampled.append(data_sampled)
-                        val_loader = DataLoader(val_dataset, batch_size = 1, shuffle = True)
-                        # del(val_dataset)
+                            val_dataset_sampled.append(data_sampled)
+                        val_loader = DataLoader(val_dataset_sampled, batch_size = 1, shuffle = True)
+                        del(val_dataset_sampled)
                         val_outs, val_loss, _ = test(device, model, val_loader, final_epoch, criterion)
                         del(val_loader)
                 else:
                     val_outs, val_loss, _ = test(device, model, val_loader, final_epoch, criterion)
-
+                val_epochs.append(pbar_train)
                 train_loss_list.append(train_loss)
                 val_loss_list.append(val_loss)
 
@@ -223,7 +218,7 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'RM
     ax_train_surf.legend(loc = 'best')
     fig_train_surf.savefig(osp.join(path, 'train_loss.png'), dpi = 150, bbox_inches = 'tight')
     print('Graph Saved')
-    # post_process(val_outs)
+    post_process(val_outs, name_mod, hparams)
 
     # fig_train_vol, ax_train_vol = plt.subplots(figsize = (20, 5))
     # ax_train_vol.plot(train_loss_vol_list, label = 'Mean loss')

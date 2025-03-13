@@ -2,7 +2,7 @@
             "regression": "Total",
             "loss": "MSE",
             "nb_parameters": 65757.0,
-            "time_elapsed": 113.3132209777832,
+            "time_elapsed": 53969.7231760025,
             "hparams": {
                         "encoder": [
                                     5,
@@ -36,12 +36,12 @@
                         "batchnorm": true,
                         "res": false,
                         "batch_size": 1,
-                        "nb_epochs": 1,
+                        "nb_epochs": 398,
                         "lr": 0.001,
-                        "max_neighbors": 64,
+                        "max_neighbors": 5,
                         "subsampling": 32000,
                         "r": 0.05
             },
-            "train_loss": 19768.703125,
-            "val_loss": 4882.336893717448
+            "train_loss": 0.6359881525454314,
+            "val_loss": 1.1048649163502786
 }

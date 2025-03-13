@@ -2,12 +2,11 @@ import torch
 import torch.nn as nn
 import torch_geometric.nn as nng
 import random
-from remesh import remesh
 
 def DownSample(id, x, edge_index, pos_x, pool, pool_ratio, r, max_neighbors):
     y = x.clone()
     n = int(x.size(0))
-    
+
     if pool is not None:
         y, _, _, _, id_sampled, _ = pool(y, edge_index)
     else:
@@ -15,13 +14,14 @@ def DownSample(id, x, edge_index, pos_x, pool, pool_ratio, r, max_neighbors):
         id_sampled = random.sample(range(n), k)
         id_sampled = torch.tensor(id_sampled, dtype = torch.long)
         y = y[id_sampled]
-    
-    # posit = pos[id_sampled]
+
     pos_x = pos_x[id_sampled]
     id.append(id_sampled)
-    
-    # edge_index_sampled = remesh(posit, lm)
-    
+
+    # if training:
+    #     edge_index_sampled = nng.radius_graph(x = pos_x.detach(), r = r, loop = True, max_num_neighbors = 64)
+    # else:
+    #     edge_index_sampled = nng.radius_graph(x = pos_x.detach(), r = r, loop = True, max_num_neighbors = 512)
     edge_index_sampled = nng.radius_graph(x = pos_x.detach(), r = r, loop = True, max_num_neighbors = max_neighbors)
 
     return y, edge_index_sampled
@@ -167,8 +167,7 @@ class GUNet(nn.Module):
                 ))
 
     def forward(self, data):
-        x, edge_index, pos, lm = data.x, data.edge_index, data.pos, data.lm
-        # print(f'forward: {edge_index.size()=}')
+        x, edge_index = data.x, data.edge_index
         id = []
         edge_index_list = [edge_index.clone()]
         pos_x_list = []
@@ -186,9 +185,7 @@ class GUNet(nn.Module):
         for n in range(self.L - 1):
             pos_x = x[:, :2] if n == 0 else pos_x[id[n - 1]]
             pos_x_list.append(pos_x.clone())
-            # print('-----------------------')
-            # print(f'Pre-Downsampled {len(edge_index)=}  {len(edge_index[0])=}')
-            # print('-----------------------')
+
             if self.pool_type != 'random':
                 z, edge_index = DownSample(id, z, edge_index, pos_x, self.pool[n], self.pool_ratio[n], self.list_r[n], self.max_neighbors)
             else:

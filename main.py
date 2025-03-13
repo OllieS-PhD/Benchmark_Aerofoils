@@ -38,7 +38,7 @@ val_dataset = manifest_train[-n:]
 # torch.save(val_dataset, 'Dataset/val_dataset')
 
 '''
-USING OWN DATA HERE, OVERFITTING ON 3 foils
+USING OWN DATA HERE, OVERFITTING ON 30 foils
 When doing a proper go at it, randomise all 1830 into 2 groups of 80/20% 
 '''
 coef_norm = None
@@ -51,7 +51,8 @@ for foil in range(23):
 for foil in range(24, 30):
     for i in range(24):
         val_dataset.append(data_loader(foil,i))
-
+# train_dataset.append(data_loader(0,0))
+# val_dataset.append(data_loader(1,0))
 print('-----------------------------------------')
 print('Running: '+ args.model)
 
