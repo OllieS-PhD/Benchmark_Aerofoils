@@ -7,9 +7,9 @@ import h5py
 import os
 
 
-def post_process(val_outs, name_mod, hparams):
+def post_process(val_outs, name_mod, hparams, num_foils=30):
     vars = ["x","y","rho","rho_u","rho_v", "e", "omega"]
-    data_path = 'E:/network_outs/' + str(hparams['nb_epochs']) + '_epochs/'+name_mod+'/'
+    data_path = 'E:/network_outs/' + str(num_foils) + '_foils/' + str(hparams['nb_epochs']) + '_epochs/'+name_mod+'/'
     
     for gidx in val_outs:
         spec_out = gidx.cpu()

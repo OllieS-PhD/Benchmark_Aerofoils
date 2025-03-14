@@ -114,7 +114,7 @@ for data in val_outs:
     data.x = scaler.inverse_transform(data.x.cpu())
     data.y = scaler.inverse_transform(data.y.cpu())
 
-post_process(val_outs, args.model, hparams)
+post_process(val_outs, args.model, hparams, num_foils)
 
 if bool(args.score):
     s = args.task + '_test' if args.task != 'scarce' else 'full_test'
