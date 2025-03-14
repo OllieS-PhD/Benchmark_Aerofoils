@@ -3,13 +3,16 @@ import torch
 import train, metrics
 # from dataset import Dataset
 import os.path as osp
+import numpy as np
+from tqdm import tqdm
 
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 from data.post_process import post_process
 from data.data_loader import data_loader
 # print('torch version:       '+torch.__version__)
-import numpy as np
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('model', help = 'The model you want to train, choose between MLP, GraphSAGE, PointNet, GUNet', type = str)
@@ -42,32 +45,45 @@ val_dataset = manifest_train[-n:]
 
 '''
 USING OWN DATA HERE, OVERFITTING ON 30 foils
-When doing a proper go at it, randomise all 1830 into 2 groups of 80/20% 
+When doing a proper go at it, randomise all 1830 into 2 groups of 70:30 
 '''
-num_foils = 30
+num_foils = 1830
+scaler = MinMaxScaler()
+# scaler = StandardScaler()
 
 coef_norm = None
-train_dataset = []
-val_dataset = []
-for foil in range(23):
-    for i in range(24):
-        train_dataset.append(data_loader(foil,i))
-for foil in range(24, 30):
-    for i in range(24):
-        val_dataset.append(data_loader(foil,i))
+d_set = []
+# train_dataset = []
+# val_dataset = []
+# for foil in range(23):
+#     for i in range(24):
+#         train_dataset.append(data_loader(foil,i))
+# for foil in range(24, 30):
+#     for i in range(24):
+#         val_dataset.append(data_loader(foil,i))
 
-scaler = MinMaxScaler()
-for data in train_dataset:
-    data.x = torch.tensor(scaler.fit_transform(data.x)).to(torch.float32)
-    data.y = torch.tensor(scaler.fit_transform(data.y)).to(torch.float32)
-for data in val_dataset:
-    data.x = torch.tensor(scaler.fit_transform(data.x)).to(torch.float32)
-    data.y = torch.tensor(scaler.fit_transform(data.y)).to(torch.float32)
+print('-----------------------------------------')
+print('Running: '+ args.model)
+
+for foil in tqdm(range(num_foils), desc="Loading in Data"):
+    for alf in range(24):
+        data = data_loader(foil, alf)
+        data.x = torch.tensor(scaler.fit_transform(data.x)).to(torch.float32)
+        data.y = torch.tensor(scaler.fit_transform(data.y)).to(torch.float32)
+        d_set.append(data)
+
+train_dataset, val_dataset = train_test_split(d_set, test_size=0.3)
+
+
+# for data in train_dataset:
+#     data.x = torch.tensor(scaler.fit_transform(data.x)).to(torch.float32)
+#     data.y = torch.tensor(scaler.fit_transform(data.y)).to(torch.float32)
+# for data in val_dataset:
+#     data.x = torch.tensor(scaler.fit_transform(data.x)).to(torch.float32)
+#     data.y = torch.tensor(scaler.fit_transform(data.y)).to(torch.float32)
 
 # train_dataset.append(data_loader(0,0))
 # val_dataset.append(data_loader(1,0))
-print('-----------------------------------------')
-print('Running: '+ args.model)
 
 # Cuda
 use_cuda = torch.cuda.is_available()

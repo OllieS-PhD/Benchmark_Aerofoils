@@ -226,12 +226,23 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'RM
     fig_train_surf.savefig(osp.join(path, f'{criterion}_train_loss.png'), dpi = 150, bbox_inches = 'tight')
 
     fig_train_vol, ax_train_vol = plt.subplots(figsize = (20, 5))
-    ax_train_vol.plot(val_loss_list, label = 'Validation loss')
+    x_axis = [i * 10 for i in range(len(val_loss_list))]
+    ax_train_vol.plot(x_axis, val_loss_list, label='Validation loss')
     ax_train_vol.set_xlabel('epochs')
     ax_train_vol.set_yscale('log')
     ax_train_vol.set_title('Val Losses:  ' + criterion)
     ax_train_vol.legend(loc = 'best')
     fig_train_vol.savefig(osp.join(path, f'{criterion}_val_loss.png'), dpi = 150, bbox_inches = 'tight')
+    
+    fig_both, ax_both = plt.subplots(figsize = (20, 5))
+    ax_both.plot(train_loss_list, label = 'Training loss')
+    ax_train_vol.plot(x_axis, val_loss_list, label='Validation loss')
+    ax_both.set_xlabel('epochs')
+    ax_both.set_yscale('log')
+    ax_both.set_title('Train Losses:  ' + criterion)
+    ax_both.legend(loc = 'best')
+    fig_both.savefig(osp.join(path, f'{criterion}_both_losses.png'), dpi = 150, bbox_inches = 'tight')
+    
     print('Graphs Saved')
 
     # if val_iter is not None:
