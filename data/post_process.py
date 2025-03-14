@@ -25,10 +25,10 @@ def post_process(val_outs, name_mod, hparams):
         G = nx.Graph()
         for i in range(len(pos)):
             G.add_node(i, x = xk[i], y=yk[i],  rho=data[i,0], rho_u=data[i,1], rho_v=data[i,2], e=data[i,3], omega=data[i,4])
-        for i in range(len(edges[0])):
-            u_add = edges[0,i].item()
-            v_add = edges[1,i].item()
-            G.add_edge(u_add,v_add)
+        # for i in range(len(edges[0])):
+        #     u_add = edges[0,i].item()
+        #     v_add = edges[1,i].item()
+        #     G.add_edge(u_add,v_add)
         
         file_path = data_path +'airfoil_'+str('{:04d}'.format(foil_n))+'.h5'
         if not os.path.exists(data_path):
@@ -38,7 +38,7 @@ def post_process(val_outs, name_mod, hparams):
         with h5py.File(file_path, 'a') as hf:
             grp = hf.create_group(grp_path)
             grp.create_dataset('coeffs', data = (spec_out.cl,spec_out.cd))
-            grp.create_dataset('edges', data=spec_out.edge_index)#, compression = "gzip")
+            # grp.create_dataset('edges', data=spec_out.edge_index)#, compression = "gzip")
             
             # Loop through each attribute
             node_group = grp.create_group('x_nodes')

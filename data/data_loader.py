@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import torch
 import torch_geometric.utils as pyg_utils
 from torch_geometric.data import Data, Dataset
+from sklearn.preprocessing import MinMaxScaler
 
 
 def data_loader(foil_n, alpha):
@@ -32,41 +33,46 @@ def data_loader(foil_n, alpha):
             # print(hf[alf_path]['nodes'][vars[i]][:][()])
             data[i,:] = hf[alf_path]['nodes'][vars[i]][:][()]
         foil_geom = hf[alf_path]['nodes']["airfoil"][:][()]
+        # scaler = MinMaxScaler()
+        # data = scaler.fit_transform(data)
         g_x = torch.tensor(np.transpose(data)).to(torch.float32)
         
         #edges
-        edge_arr = np.array(hf[alf_path]['edges'][()])
-        edge_data = torch.tensor(np.transpose(edge_arr)).to(torch.int64)
+        # edge_arr = np.array(hf[alf_path]['edges'][()])
+        # edge_data = torch.tensor(np.transpose(edge_arr)).to(torch.int64)
     
     Re = 3e6
     Ma_inf = 0.1
     rho_inf = 1
-    rho_u_inf = Ma_inf * math.cos(alf)
-    rho_v_inf = Ma_inf * math.sin(alf)
+    alf_rad = math.radians(alf)
+    rho_u_inf = Ma_inf * math.cos(alf_rad)
+    rho_v_inf = Ma_inf * math.sin(alf_rad)
     c = 340.15
     vel_inf = Ma_inf * c
-    u_inf = vel_inf * math.cos(alf)
-    v_inf = vel_inf * math.sin(alf)
+    u_inf = vel_inf * math.cos(alf_rad)
+    v_inf = vel_inf * math.sin(alf_rad)
     
     #["rho","rho_u","rho_v", "e", "omega"]
+    eps = 1e-10
     d_init = data
     d_init[0,:] = rho_inf
     d_init[1,:] = rho_u_inf
     d_init[2,:] = rho_v_inf
-    d_init[3,:] = 0
-    print(f'{d_init=}')
+    d_init[3,:] = eps
+    d_init[4,:] = eps
+    # print(f'{d_init=}')
 
-    # for i in range(1,4):
-    #     d_init[i,:] = 0
+    # for i in range(1,5):
+    #     d_init[i,:] = eps
     ic_x = torch.tensor(np.transpose(d_init)).to(torch.float32)
     
-    print(f'{g_x=}')
-    print(f'{ic_x=}')
+    # print(f'{g_x=}')
+    # print(f'{ic_x=}')
     
     args = {
         'pos': pos,
         'x': ic_x,
-        'edge_index': edge_data,
+        # 'edge_index': edge_data,
         'y': g_x,
         'lm': lm,
         'Re': Re,
@@ -106,12 +112,15 @@ def data_loader(foil_n, alpha):
 if __name__ == "__main__":
     data_path = 'E:/turb_model/Re_3M/Airfoil_0000.h5'
     
-    with h5py.File(data_path, 'r') as hf:
-        top_groups = [k for k in hf["AoA_0"]['nodes'].keys()]
-        print(top_groups)
+    # with h5py.File(data_path, 'r') as hf:
+    #     top_groups = [k for k in hf["AoA_0"]['nodes'].keys()]
+    #     print(top_groups)
     
-    foil_n = 0
-    alpha = 0
+    foil_n = 5
+    alpha = 7
     tik = time.time()
-    data_loader(foil_n, alpha)
+    g = data_loader(foil_n, alpha)
+    print(f'{g.foil_n=},     {g.alpha=}')
+    print(f'{g.x=}')
+    print(f'{g.y=}')
     print(f'Time to load 1 AoA:     {time.time()-tik}s')

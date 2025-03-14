@@ -4,6 +4,9 @@ import train, metrics
 # from dataset import Dataset
 import os.path as osp
 
+from sklearn.preprocessing import MinMaxScaler
+
+from data.post_process import post_process
 from data.data_loader import data_loader
 # print('torch version:       '+torch.__version__)
 import numpy as np
@@ -41,16 +44,26 @@ val_dataset = manifest_train[-n:]
 USING OWN DATA HERE, OVERFITTING ON 30 foils
 When doing a proper go at it, randomise all 1830 into 2 groups of 80/20% 
 '''
+num_foils = 30
+
 coef_norm = None
 train_dataset = []
 val_dataset = []
 for foil in range(23):
     for i in range(24):
         train_dataset.append(data_loader(foil,i))
-        
 for foil in range(24, 30):
     for i in range(24):
         val_dataset.append(data_loader(foil,i))
+
+scaler = MinMaxScaler()
+for data in train_dataset:
+    data.x = torch.tensor(scaler.fit_transform(data.x)).to(torch.float32)
+    data.y = torch.tensor(scaler.fit_transform(data.y)).to(torch.float32)
+for data in val_dataset:
+    data.x = torch.tensor(scaler.fit_transform(data.x)).to(torch.float32)
+    data.y = torch.tensor(scaler.fit_transform(data.y)).to(torch.float32)
+
 # train_dataset.append(data_loader(0,0))
 # val_dataset.append(data_loader(1,0))
 print('-----------------------------------------')
@@ -88,14 +101,20 @@ for i in range(args.nmodel):
 
     if args.model == 'GUNet':
         from models.GUNet import GUNet
-        model = GUNet(hparams, encoder, decoder)    
-
+        model = GUNet(hparams, encoder, decoder)   
     
-    log_path = osp.join('metrics', args.task, args.model) # path where you want to save log and figures    
-    model = train.main(device, train_dataset, val_dataset, model, hparams, log_path, 
-                criterion = 'MSE_weighted', val_iter = 10, reg = args.weight, name_mod = args.model, val_sample = True)
+    num_epochs=hparams['nb_epochs'] 
+    log_path = osp.join('metrics', f'{str(num_foils)}_foils', f'{str(num_epochs)}_epochs' ,args.task, args.model) # path where you want to save log and figures    
+    model, val_outs = train.main(device, train_dataset, val_dataset, model, hparams, log_path, 
+                criterion = 'MSE', val_iter = 10, reg = args.weight, name_mod = args.model, val_sample = True)
     models.append(model)
-torch.save(models, osp.join('metrics', args.task, args.model, args.model))
+torch.save(models, osp.join(log_path, args.model))
+
+for data in val_outs:
+    data.x = scaler.inverse_transform(data.x.cpu())
+    data.y = scaler.inverse_transform(data.y.cpu())
+
+post_process(val_outs, args.model, hparams)
 
 if bool(args.score):
     s = args.task + '_test' if args.task != 'scarce' else 'full_test'

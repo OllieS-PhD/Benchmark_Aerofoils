@@ -73,25 +73,25 @@ def dataSorter(foil_n, alpha):
     #     G.add_node(mesh_sz+i, rho = )
     pos = (nx.get_node_attributes(G, 'x'), nx.get_node_attributes(G, 'y')) 
 
-    aero_poly = Polygon(lm)
-    small_aero = aero_poly.buffer(-1e-5)
+    # aero_poly = Polygon(lm)
+    # small_aero = aero_poly.buffer(-1e-5)
     
-    # Check each triangle and add edges only if it doesn't intersect the exclusion area
-    for simplex in tri.simplices: # tqdm(tri.simplices, desc="Adding Edges"):
-        triangle = [X1[simplex[0]], X1[simplex[1]], X1[simplex[2]]]
-        triangle_polygon = Polygon(triangle)
-        # Skip triangles that intersect the exclusion polygon
-        if not small_aero.intersection(triangle_polygon):
-            if not G.has_edge(simplex[0], simplex[1]): G.add_edge(simplex[0], simplex[1])
-            if not G.has_edge(simplex[1], simplex[2]): G.add_edge(simplex[1], simplex[2])
-            if not G.has_edge(simplex[2], simplex[0]): G.add_edge(simplex[2], simplex[0])
-    buff_dist = 3.5e-6
-    buff_poly = aero_poly.buffer(buff_dist)
-    n_foil_points = 0
-    for nid in G.nodes():
-        if buff_poly.contains( Point( (G.nodes[nid]['x'], G.nodes[nid]['y']) )):
-            G.nodes[nid]['airfoil'] = True
-            n_foil_points +=1
+    # # Check each triangle and add edges only if it doesn't intersect the exclusion area
+    # for simplex in tri.simplices: # tqdm(tri.simplices, desc="Adding Edges"):
+    #     triangle = [X1[simplex[0]], X1[simplex[1]], X1[simplex[2]]]
+    #     triangle_polygon = Polygon(triangle)
+    #     # Skip triangles that intersect the exclusion polygon
+    #     if not small_aero.intersection(triangle_polygon):
+    #         if not G.has_edge(simplex[0], simplex[1]): G.add_edge(simplex[0], simplex[1])
+    #         if not G.has_edge(simplex[1], simplex[2]): G.add_edge(simplex[1], simplex[2])
+    #         if not G.has_edge(simplex[2], simplex[0]): G.add_edge(simplex[2], simplex[0])
+    # buff_dist = 3.5e-6
+    # buff_poly = aero_poly.buffer(buff_dist)
+    # n_foil_points = 0
+    # for nid in G.nodes():
+    #     if buff_poly.contains( Point( (G.nodes[nid]['x'], G.nodes[nid]['y']) )):
+    #         G.nodes[nid]['airfoil'] = True
+    #         n_foil_points +=1
     # print(n_foil_points)
     
     
@@ -103,8 +103,10 @@ def dataSorter(foil_n, alpha):
     # adj_matrix = nx.to_numpy_array(G)
     # node_attrs = {node: dict(G.nodes[node]) for node in G.nodes()}
     # edge_attrs = {(u, v): dict(G.edges[u, v]) for u, v in G.edges()}
-    edges = list(G.edges())
-    edge_arr = np.array(edges)
+    
+    # edges = list(G.edges())
+    # edge_arr = np.array(edges)
+    
     att_vars = dict(G.nodes[0]).keys()
     # print(att_vars)
     
@@ -129,7 +131,7 @@ def dataSorter(foil_n, alpha):
         # grp_foil = hf.create_group(foil_path)
         grp = hf.create_group(alf_path)
         grp.create_dataset('coeffs', data = (cl,cd))
-        grp.create_dataset('edges', data=edge_arr)#, compression = "gzip")
+        # grp.create_dataset('edges', data=edge_arr)#, compression = "gzip")
         
         lm_grp = grp.create_group('lm')
         lm_grp.create_dataset('x', data=lm[:,0])
@@ -150,11 +152,15 @@ def worker(worker_num):
     n_batch = 122
     start = 0 + ((n_batch)* worker_num)
     end = start + n_batch
-    for foil_i in range(start, end):
-        print(f"Worker {worker_num} : Foil Number {foil_i % (n_batch)}/{n_batch}  ")
-        for alph_i in range(24):
-            print(f"Worker {worker_num} : Alpha {alph_i-4}/20  ")
-            dataSorter(foil_n=foil_i, alpha=alph_i)
+    
+    if worker_num == 0:
+        for foil_i in tqdm(range(start, end), desc='Worker 0 Progress'):
+            for alph_i in range(24):
+                dataSorter(foil_n=foil_i, alpha=alph_i)
+    else:    
+        for foil_i in range(start, end):
+            for alph_i in range(24):
+                dataSorter(foil_n=foil_i, alpha=alph_i)
 
 
 if __name__ == '__main__':

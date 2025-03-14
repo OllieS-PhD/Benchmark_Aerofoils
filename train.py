@@ -27,68 +27,76 @@ def get_nb_trainable_params(model):
     model_parameters = filter(lambda p: p.requires_grad, model.parameters())
     return sum([np.prod(p.size()) for p in model_parameters])
 
-def train(device, model, train_loader, optimizer, scheduler, criterion = 'RMSE',  reg = 1):
+def train(device, model, train_loader, optimizer, scheduler, criterion = 'RMSE',  reg = 1, mat_sz=5):
     model.train()
-    final_outs = []
-    avg_loss_per_var = torch.zeros(5, device = device)
+    avg_loss_per_var = torch.zeros(mat_sz, device = device)
     avg_loss = 0
     iter = 0
     
     for data in train_loader:
-        data_clone = data.clone()
-        data_clone = data_clone.to(device)          
+        data.to(device)          
         optimizer.zero_grad()
         # print(f'train_data:     {data.edge_index.size()=}')
-        out = model(data_clone)
-        targets = data_clone.y
-
-        if criterion == 'MSE' or criterion == 'MSE_weighted':
+        out = model(data)
+        targets = data.y
+        # print(f'{data.foil_n=}      {data.alpha=}')
+        # print(f'{out}')
+        if criterion == 'MSE' or criterion == 'MSE_weighted' or criterion == 'RMSE':
             loss_criterion = nn.MSELoss(reduction = 'none')
-        elif criterion == 'RMSE':
-            loss_criterion = torch.sqrt(nn.MSELoss(reduction = 'none'))
         elif criterion == 'MAE':
             loss_criterion = nn.L1Loss(reduction = 'none')
-        loss_per_var = loss_criterion(out, targets).mean(dim = 0)
+        
+        if criterion == 'RMSE':
+            loss_per_var = torch.sqrt(loss_criterion(out, targets)).mean(dim = 0)
+        else:
+            loss_per_var = loss_criterion(out, targets).mean(dim = 0)
+        # print(loss_per_var)
         total_loss = loss_per_var.mean()
         total_loss.backward()
-        
+        # data.x = scaler.inverse_transform(data.x)
         optimizer.step()
         scheduler.step()
         avg_loss_per_var += loss_per_var
         avg_loss += total_loss
 
         iter += 1
-
-    return avg_loss.cpu().data.numpy()/iter, avg_loss_per_var.cpu().data.numpy()/iter 
+    avg_loss_var_iter = avg_loss_per_var.cpu().data.numpy()/iter
+    avg_loss_iter = avg_loss.cpu().data.numpy()/iter
+    # print()
+    # print(f'{avg_loss_var_iter=}')
+    # print(f'{out[:,4]=}')
+    # print(f'{targets[:,4]=}')
+    return avg_loss_iter,  avg_loss_var_iter
 
 @torch.no_grad()
-def test(device, model, test_loader, final_epoch, criterion = 'RMSE'):
+def test(device, model, test_loader, final_epoch, criterion = 'RMSE', mat_sz=5):
     model.eval()
     final_outs = []
-    avg_loss_per_var = np.zeros(5)
+    avg_loss_per_var = np.zeros(mat_sz)
     avg_loss = 0
     iter = 0
-
-    for data in test_loader:        
-        data_clone = data.clone()
-        data_clone = data_clone.to(device)
-        out = model(data_clone)       
-        targets = data_clone.y
-        if criterion == 'MSE' or 'MSE_weighted':
+    for data in test_loader:      
+        data.to(device)
+        
+        out = model(data)       
+        targets = data.y                
+        
+        if criterion == 'MSE' or 'MSE_weighted' or 'RMSE':
             loss_criterion = nn.MSELoss(reduction = 'none')
-        elif criterion == 'RMSE':
-            loss_criterion = torch.sqrt(nn.MSELoss(reduction = 'none'))
         elif criterion == 'MAE':
             loss_criterion = nn.L1Loss(reduction = 'none')
         
-        loss_per_var = loss_criterion(out, targets).mean(dim = 0)
+        if criterion == 'RMSE':
+            loss_per_var = torch.sqrt(loss_criterion(out, targets)).mean(dim = 0)
+        else:
+            loss_per_var = loss_criterion(out, targets).mean(dim = 0)
         loss = loss_per_var.mean()
         
         
         avg_loss_per_var += loss_per_var.cpu().numpy()
         avg_loss += loss.cpu().numpy()
         if final_epoch==True:
-            data_outs = data_clone
+            data_outs = data
             data_outs.x = out
             final_outs.append(data_outs)
         iter += 1
@@ -144,7 +152,7 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'RM
             # data_sampled.surf = data_sampled.surf[idx]
 
             if name_mod != 'PointNet' and name_mod != 'MLP':
-                data.edge_index = nng.radius_graph(x = data.pos.to(device), r = hparams['r'], loop = True, max_num_neighbors = int(hparams['max_neighbors'])).cpu()
+                data_sampled.edge_index = nng.radius_graph(x = data_sampled.pos.to(device), r = hparams['r'], loop = True, max_num_neighbors = int(hparams['max_neighbors'])).cpu()
             
             train_dataset_sampled.append(data_sampled)
         train_loader = DataLoader(train_dataset_sampled, batch_size = hparams['batch_size'], shuffle = True)
@@ -171,7 +179,7 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'RM
                             # data_sampled.y = data_sampled.y[idx].to(device)
                             
                             if name_mod != 'PointNet' and name_mod != 'MLP':
-                                data.edge_index = nng.radius_graph(x = data.pos.to(device), r = hparams['r'], loop = True, max_num_neighbors = int(hparams['max_neighbors'])).cpu()
+                                data_sampled.edge_index = nng.radius_graph(x = data_sampled.pos.to(device), r = hparams['r'], loop = True, max_num_neighbors = int(hparams['max_neighbors'])).cpu()
                             
                             val_dataset_sampled.append(data_sampled)
                         val_loader = DataLoader(val_dataset_sampled, batch_size = 1, shuffle = True)
@@ -211,24 +219,20 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'RM
     sns.set()
     fig_train_surf, ax_train_surf = plt.subplots(figsize = (20, 5))
     ax_train_surf.plot(train_loss_list, label = 'Training loss')
-    ax_train_surf.plot(val_loss_list, label = 'Validation loss')
     ax_train_surf.set_xlabel('epochs')
     ax_train_surf.set_yscale('log')
-    ax_train_surf.set_title('Mean losses')
+    ax_train_surf.set_title('Train Losses:  ' + criterion)
     ax_train_surf.legend(loc = 'best')
-    fig_train_surf.savefig(osp.join(path, 'train_loss.png'), dpi = 150, bbox_inches = 'tight')
-    print('Graph Saved')
-    post_process(val_outs, name_mod, hparams)
+    fig_train_surf.savefig(osp.join(path, f'{criterion}_train_loss.png'), dpi = 150, bbox_inches = 'tight')
 
-    # fig_train_vol, ax_train_vol = plt.subplots(figsize = (20, 5))
-    # ax_train_vol.plot(train_loss_vol_list, label = 'Mean loss')
-    # ax_train_vol.plot(loss_vol_var_list[:, 0], label = r'$v_x$ loss'); ax_train_vol.plot(loss_vol_var_list[:, 1], label = r'$v_y$ loss')
-    # ax_train_vol.plot(loss_vol_var_list[:, 2], label = r'$p$ loss'); ax_train_vol.plot(loss_vol_var_list[:, 3], label = r'$\nu_t$ loss')
-    # ax_train_vol.set_xlabel('epochs')
-    # ax_train_vol.set_yscale('log')
-    # ax_train_vol.set_title('Train losses over the volume')
-    # ax_train_vol.legend(loc = 'best')
-    # fig_train_vol.savefig(osp.join(path, 'train_loss_vol.png'), dpi = 150, bbox_inches = 'tight')
+    fig_train_vol, ax_train_vol = plt.subplots(figsize = (20, 5))
+    ax_train_vol.plot(val_loss_list, label = 'Validation loss')
+    ax_train_vol.set_xlabel('epochs')
+    ax_train_vol.set_yscale('log')
+    ax_train_vol.set_title('Val Losses:  ' + criterion)
+    ax_train_vol.legend(loc = 'best')
+    fig_train_vol.savefig(osp.join(path, f'{criterion}_val_loss.png'), dpi = 150, bbox_inches = 'tight')
+    print('Graphs Saved')
 
     # if val_iter is not None:
     #     fig_val_surf, ax_val_surf = plt.subplots(figsize = (20, 5))
@@ -271,4 +275,4 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'RM
                 }, f, indent = 12, cls = NumpyEncoder
             )
 
-    return model
+    return model, val_outs
