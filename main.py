@@ -47,7 +47,7 @@ val_dataset = manifest_train[-n:]
 USING OWN DATA HERE, OVERFITTING ON 30 foils
 When doing a proper go at it, randomise all 1830 into 2 groups of 70:30 
 '''
-num_foils = 1830
+num_foils = 150
 scaler = MinMaxScaler()
 # scaler = StandardScaler()
 
@@ -62,8 +62,9 @@ d_set = []
 #     for i in range(24):
 #         val_dataset.append(data_loader(foil,i))
 
-print('-----------------------------------------')
-print('Running: '+ args.model)
+print('-----------------------------------------------')
+print( 'Running: '+ args.model + f'             for {num_foils} airfoils')
+print('-----------------------------------------------')
 
 for foil in tqdm(range(num_foils), desc="Loading in Data"):
     for alf in range(24):
