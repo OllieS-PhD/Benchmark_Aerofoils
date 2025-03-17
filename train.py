@@ -20,6 +20,26 @@ from tqdm import tqdm
 from pathlib import Path
 import os.path as osp
 
+class EarlyStopping:
+    def __init__(self, patience=7, delta=0, path='checkpoint.pt'):
+        self.patience = patience
+        self.delta = delta
+        self.path = path
+        self.counter = 0
+        self.best_loss = float('inf')
+        
+    def __call__(self, val_loss, model):
+        if val_loss > self.best_loss - self.delta:
+            self.counter += 1
+            if self.counter >= self.patience:
+                return True  # Stop training
+        else:
+            self.best_loss = val_loss
+            torch.save(model.state_dict(), self.path)
+            self.counter = 0
+        return False
+
+
 def get_nb_trainable_params(model):
     '''
     Return the number of trainable parameters
@@ -55,7 +75,7 @@ def train(device, model, train_loader, optimizer, scheduler, criterion = 'RMSE',
         total_loss.backward()
         # data.x = scaler.inverse_transform(data.x)
         optimizer.step()
-        scheduler.step()
+        scheduler.step(total_loss)
         avg_loss_per_var += loss_per_var
         avg_loss += total_loss
 
@@ -125,11 +145,18 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'RM
     Path(path).mkdir(parents = True, exist_ok = True)
     model = Net.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr = hparams['lr'])
-    lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
-            optimizer,
-            max_lr = hparams['lr'],
-            total_steps = (len(train_dataset) // hparams['batch_size'] + 1) * hparams['nb_epochs'],
+    # lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
+    #         optimizer,
+    #         max_lr = hparams['lr'],
+    #         total_steps = (len(train_dataset) // hparams['batch_size'] + 1) * hparams['nb_epochs'],
+    #     )
+    lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        mode='min',
+        factor=0.1,
+        patience=0
         )
+    early_stopping = EarlyStopping(patience=10, delta=0.0001)
     val_loader = DataLoader(val_dataset, batch_size = 1)
     start = time.time()
 
@@ -188,18 +215,29 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'RM
                         del(val_loader)
                 else:
                     val_outs, val_loss, _ = test(device, model, val_loader, final_epoch, criterion)
+                
                 val_epochs.append(pbar_train)
                 train_loss_list.append(train_loss)
                 val_loss_list.append(val_loss)
-
+                #######################
+                #   Early Stopping!!  #
+                #######################
+                if early_stopping(val_loss, model):
+                    print(f"\nEarly stopping at epoch {epoch}")
+                    break
+                
                 pbar_train.set_postfix(train_loss = train_loss, val_loss = val_loss)
             else:
                 pbar_train.set_postfix(train_loss = train_loss, val_loss = val_loss)
+            
+            
         else:
             pbar_train.set_postfix(train_loss = train_loss)
+        
     
     train_loss_list = np.array(train_loss_list)
     val_loss_list = np.array(val_loss_list)
+
 
     end = time.time()
     time_elapsed = end - start

@@ -1,0 +1,253 @@
+{
+            "regression": "Total",
+            "loss": "MSE",
+            "nb_parameters": 19925.0,
+            "time_elapsed": 32.20757055282593,
+            "hparams": {
+                        "encoder": [
+                                    5,
+                                    64,
+                                    64,
+                                    8
+                        ],
+                        "decoder": [
+                                    8,
+                                    64,
+                                    64,
+                                    5
+                        ],
+                        "nb_hidden_layers": 3,
+                        "size_hidden_layers": 64,
+                        "batch_size": 1,
+                        "nb_epochs": 10,
+                        "lr": 0.001,
+                        "bn_bool": true,
+                        "subsampling": 32000
+            },
+            "train_loss": 0.04632379327501569,
+            "val_loss": 0.04170908765970833
+}{
+            "regression": "Total",
+            "loss": "MSE",
+            "nb_parameters": 19925.0,
+            "time_elapsed": 32.50866651535034,
+            "hparams": {
+                        "encoder": [
+                                    5,
+                                    64,
+                                    64,
+                                    8
+                        ],
+                        "decoder": [
+                                    8,
+                                    64,
+                                    64,
+                                    5
+                        ],
+                        "nb_hidden_layers": 3,
+                        "size_hidden_layers": 64,
+                        "batch_size": 1,
+                        "nb_epochs": 10,
+                        "lr": 0.001,
+                        "bn_bool": true,
+                        "subsampling": 32000
+            },
+            "train_loss": 0.04674649522418067,
+            "val_loss": 0.042103260652058654
+}{
+            "regression": "Total",
+            "loss": "MSE",
+            "nb_parameters": 19925.0,
+            "time_elapsed": 32.69343090057373,
+            "hparams": {
+                        "encoder": [
+                                    5,
+                                    64,
+                                    64,
+                                    8
+                        ],
+                        "decoder": [
+                                    8,
+                                    64,
+                                    64,
+                                    5
+                        ],
+                        "nb_hidden_layers": 3,
+                        "size_hidden_layers": 64,
+                        "batch_size": 1,
+                        "nb_epochs": 10,
+                        "lr": 0.001,
+                        "bn_bool": true,
+                        "subsampling": 32000
+            },
+            "train_loss": 0.048225385802132745,
+            "val_loss": 0.04334706523352199
+}{
+            "regression": "Total",
+            "loss": "MSE",
+            "nb_parameters": 19925.0,
+            "time_elapsed": 33.3328800201416,
+            "hparams": {
+                        "encoder": [
+                                    5,
+                                    64,
+                                    64,
+                                    8
+                        ],
+                        "decoder": [
+                                    8,
+                                    64,
+                                    64,
+                                    5
+                        ],
+                        "nb_hidden_layers": 3,
+                        "size_hidden_layers": 64,
+                        "batch_size": 1,
+                        "nb_epochs": 10,
+                        "lr": 0.001,
+                        "bn_bool": true,
+                        "subsampling": 32000
+            },
+            "train_loss": 0.04821794941311791,
+            "val_loss": 0.04340036560056938
+}{
+            "regression": "Total",
+            "loss": "MSE",
+            "nb_parameters": 19925.0,
+            "time_elapsed": 32.05639576911926,
+            "hparams": {
+                        "encoder": [
+                                    5,
+                                    64,
+                                    64,
+                                    8
+                        ],
+                        "decoder": [
+                                    8,
+                                    64,
+                                    64,
+                                    5
+                        ],
+                        "nb_hidden_layers": 3,
+                        "size_hidden_layers": 64,
+                        "batch_size": 1,
+                        "nb_epochs": 10,
+                        "lr": 0.001,
+                        "bn_bool": true,
+                        "subsampling": 32000
+            },
+            "train_loss": 0.048227156911577494,
+            "val_loss": 0.043459817198001675
+}{
+            "regression": "Total",
+            "loss": "MSE",
+            "nb_parameters": 19925.0,
+            "time_elapsed": 33.06131720542908,
+            "hparams": {
+                        "encoder": [
+                                    5,
+                                    64,
+                                    64,
+                                    8
+                        ],
+                        "decoder": [
+                                    8,
+                                    64,
+                                    64,
+                                    5
+                        ],
+                        "nb_hidden_layers": 3,
+                        "size_hidden_layers": 64,
+                        "batch_size": 1,
+                        "nb_epochs": 10,
+                        "lr": 0.001,
+                        "bn_bool": true,
+                        "subsampling": 32000
+            },
+            "train_loss": 0.04829217138744536,
+            "val_loss": 0.04346309408235053
+}{
+            "regression": "Total",
+            "loss": "MSE",
+            "nb_parameters": 19925.0,
+            "time_elapsed": 33.188815116882324,
+            "hparams": {
+                        "encoder": [
+                                    5,
+                                    64,
+                                    64,
+                                    8
+                        ],
+                        "decoder": [
+                                    8,
+                                    64,
+                                    64,
+                                    5
+                        ],
+                        "nb_hidden_layers": 3,
+                        "size_hidden_layers": 64,
+                        "batch_size": 1,
+                        "nb_epochs": 10,
+                        "lr": 0.001,
+                        "bn_bool": true,
+                        "subsampling": 32000
+            },
+            "train_loss": 0.048221525691804434,
+            "val_loss": 0.043322791526508
+}{
+            "regression": "Total",
+            "loss": "MSE",
+            "nb_parameters": 19925.0,
+            "time_elapsed": 33.56448721885681,
+            "hparams": {
+                        "encoder": [
+                                    5,
+                                    64,
+                                    64,
+                                    8
+                        ],
+                        "decoder": [
+                                    8,
+                                    64,
+                                    64,
+                                    5
+                        ],
+                        "nb_hidden_layers": 3,
+                        "size_hidden_layers": 64,
+                        "batch_size": 1,
+                        "nb_epochs": 10,
+                        "lr": 0.001,
+                        "bn_bool": true,
+                        "subsampling": 32000
+            },
+            "train_loss": 0.048203774860927036,
+            "val_loss": 0.043322537197834916
+}{
+            "regression": "Total",
+            "loss": "MSE",
+            "nb_parameters": 19925.0,
+            "time_elapsed": 31.66299057006836,
+            "hparams": {
+                        "encoder": [
+                                    5,
+                                    64,
+                                    64,
+                                    8
+                        ],
+                        "decoder": [
+                                    8,
+                                    64,
+                                    64,
+                                    5
+                        ],
+                        "nb_hidden_layers": 3,
+                        "size_hidden_layers": 64,
+                        "batch_size": 1,
+                        "nb_epochs": 10,
+                        "lr": 0.001,
+                        "bn_bool": true,
+                        "subsampling": 32000
+            },
+            "train_loss": 0.31826064700172063,
+            "val_loss": 0.29669906405938995
+}

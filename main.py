@@ -9,6 +9,7 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
+from data.visualise_error import error_graphs
 from data.post_process import post_process
 from data.data_loader import data_loader
 # print('torch version:       '+torch.__version__)
@@ -47,33 +48,49 @@ val_dataset = manifest_train[-n:]
 USING OWN DATA HERE, OVERFITTING ON 30 foils
 When doing a proper go at it, randomise all 1830 into 2 groups of 70:30 
 '''
-num_foils = 150
+
+t_split = 0.7
+num_foils = 20
 scaler = MinMaxScaler()
 # scaler = StandardScaler()
 
-coef_norm = None
-d_set = []
-# train_dataset = []
-# val_dataset = []
-# for foil in range(23):
-#     for i in range(24):
-#         train_dataset.append(data_loader(foil,i))
-# for foil in range(24, 30):
-#     for i in range(24):
-#         val_dataset.append(data_loader(foil,i))
+# train_idx = []
+# test_idx = []
+
 
 print('-----------------------------------------------')
 print( 'Running: '+ args.model + f'             for {num_foils} airfoils')
 print('-----------------------------------------------')
 
-for foil in tqdm(range(num_foils), desc="Loading in Data"):
+val_set = range((int(num_foils*t_split)), num_foils)
+
+coef_norm = None
+d_set = []
+train_dataset = []
+val_dataset = []
+for foil in tqdm(range(int(num_foils*t_split)), desc="Loading Training Data"):
     for alf in range(24):
         data = data_loader(foil, alf)
         data.x = torch.tensor(scaler.fit_transform(data.x)).to(torch.float32)
         data.y = torch.tensor(scaler.fit_transform(data.y)).to(torch.float32)
-        d_set.append(data)
+        train_dataset.append(data)
+for foil in tqdm(val_set, desc = "Loading Validation Data"):
+    for alf in range(24):
+        data = data_loader(foil, alf)
+        data.x = torch.tensor(scaler.fit_transform(data.x)).to(torch.float32)
+        data.y = torch.tensor(scaler.fit_transform(data.y)).to(torch.float32)
+        val_dataset.append(data)
 
-train_dataset, val_dataset = train_test_split(d_set, test_size=0.3)
+
+
+# for foil in tqdm(range(num_foils), desc="Loading in Data"):
+#     for alf in range(24):
+#         data = data_loader(foil, alf)
+#         data.x = torch.tensor(scaler.fit_transform(data.x)).to(torch.float32)
+#         data.y = torch.tensor(scaler.fit_transform(data.y)).to(torch.float32)
+#         d_set.append(data)
+
+# train_dataset, val_dataset = train_test_split(d_set, test_size=0.3)
 
 
 # for data in train_dataset:
@@ -132,6 +149,10 @@ for data in val_outs:
     data.y = scaler.inverse_transform(data.y.cpu())
 
 post_process(val_outs, args.model, hparams, num_foils)
+
+for foil_n in tqdm(val_set, desc='Saving Error Graphs'):
+    for alpha in range(24):
+        error_graphs(foil_n, alpha, num_foils, num_epochs, args.model)
 
 if bool(args.score):
     s = args.task + '_test' if args.task != 'scarce' else 'full_test'

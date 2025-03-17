@@ -26,13 +26,24 @@ def data_loader(foil_n, alpha):
         lmx, lmy = hf[alf_path]['lm']['x'][:][()], hf[alf_path]['lm']['y'][:][()]
         lm = torch.tensor(np.vstack((lmx,lmy)).T)
         xk, yk = hf[alf_path]['nodes']['x'][:][()], hf[alf_path]['nodes']['y'][:][()]
-        pos = torch.tensor(np.vstack((xk,yk)).T)
-        
+        # print('------------------------------------')
+        # print(f'Foil    {foil_n}        Alpha   {alf}')
+        # print(f'{len(data)}     {len(data[0])}')
         #nodes
         for i in range(len(vars)):
             # print(hf[alf_path]['nodes'][vars[i]][:][()])
             data[i,:] = hf[alf_path]['nodes'][vars[i]][:][()]
         foil_geom = hf[alf_path]['nodes']["airfoil"][:][()]
+        
+        radius = 1 # 2 # 4 # 7
+        data = np.array(data)
+        del_list = [i for i in range(mesh_sz) if np.sqrt( np.square(xk[i]-0.5) + np.square(yk[i]) ) > radius]
+        data = np.delete(data, del_list, axis=1)
+        pos = np.delete(np.vstack((xk,yk)), del_list, axis=1)
+        pos = torch.tensor(pos.T)
+        
+        # print(f'{len(data)}     {len(data[0])}')
+        
         # scaler = MinMaxScaler()
         # data = scaler.fit_transform(data)
         g_x = torch.tensor(np.transpose(data)).to(torch.float32)
