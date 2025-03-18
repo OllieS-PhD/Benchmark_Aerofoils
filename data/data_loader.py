@@ -37,7 +37,9 @@ def data_loader(foil_n, alpha):
         
         radius = 1 # 2 # 4 # 7
         data = np.array(data)
-        del_list = [i for i in range(mesh_sz) if np.sqrt( np.square(xk[i]-0.5) + np.square(yk[i]) ) > radius]
+        # del_list = [i for i in range(mesh_sz) if np.sqrt( np.square(xk[i]-0.5) + np.square(yk[i]) ) > radius]
+        del_list = [i for i in range(mesh_sz) if np.sqrt( np.square(xk[i]) + np.square(yk[i]) ) > 0.1]
+        # del_list = [i for i in range(mesh_sz) if ((xk[i] > 1.2) or (xk[i]<0.2) or (yk[i] > 0.5) or (yk[i] < 0.5))]
         data = np.delete(data, del_list, axis=1)
         pos = np.delete(np.vstack((xk,yk)), del_list, axis=1)
         pos = torch.tensor(pos.T)
@@ -63,6 +65,7 @@ def data_loader(foil_n, alpha):
     u_inf = vel_inf * math.cos(alf_rad)
     v_inf = vel_inf * math.sin(alf_rad)
     
+    
     #["rho","rho_u","rho_v", "e", "omega"]
     eps = 1e-10
     d_init = data
@@ -71,12 +74,20 @@ def data_loader(foil_n, alpha):
     d_init[2,:] = rho_v_inf
     d_init[3,:] = eps
     d_init[4,:] = eps
-    # print(f'{d_init=}')
+    
 
     # for i in range(1,5):
     #     d_init[i,:] = eps
     ic_x = torch.tensor(np.transpose(d_init)).to(torch.float32)
     
+    
+    # print(f'\n{rho_u_inf=}')
+    # print(f'{rho_v_inf=}')
+    # print(f'{ic_x=}')
+    # print(f'{g_x=}')
+    # print('--------------------------')
+    # # print(f'{d_init=}')
+    # # print(f'{data=}')
     # print(f'{g_x=}')
     # print(f'{ic_x=}')
     

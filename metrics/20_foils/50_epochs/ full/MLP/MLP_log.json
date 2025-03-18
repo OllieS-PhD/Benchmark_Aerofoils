@@ -1,0 +1,57 @@
+{
+            "regression": "Total",
+            "loss": "MSE",
+            "nb_parameters": 19925.0,
+            "time_elapsed": 251.4768261909485,
+            "hparams": {
+                        "encoder": [
+                                    5,
+                                    64,
+                                    64,
+                                    8
+                        ],
+                        "decoder": [
+                                    8,
+                                    64,
+                                    64,
+                                    5
+                        ],
+                        "nb_hidden_layers": 3,
+                        "size_hidden_layers": 64,
+                        "batch_size": 1,
+                        "nb_epochs": 50,
+                        "lr": 0.001,
+                        "bn_bool": true,
+                        "subsampling": 32000
+            },
+            "train_loss": 0.1180614743913923,
+            "val_loss": 0.11173057302625643
+}{
+            "regression": "Total",
+            "loss": "MSE",
+            "nb_parameters": 19925.0,
+            "time_elapsed": 269.3779354095459,
+            "hparams": {
+                        "encoder": [
+                                    5,
+                                    64,
+                                    64,
+                                    8
+                        ],
+                        "decoder": [
+                                    8,
+                                    64,
+                                    64,
+                                    5
+                        ],
+                        "nb_hidden_layers": 3,
+                        "size_hidden_layers": 64,
+                        "batch_size": 1,
+                        "nb_epochs": 50,
+                        "lr": 0.001,
+                        "bn_bool": true,
+                        "subsampling": 32000
+            },
+            "train_loss": 0.20682827631632486,
+            "val_loss": 0.19908215747111374
+}

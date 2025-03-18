@@ -5,9 +5,10 @@ import train, metrics
 import os.path as osp
 import numpy as np
 from tqdm import tqdm
+import time
 
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, normalize
 
 from data.visualise_error import error_graphs
 from data.post_process import post_process
@@ -44,44 +45,62 @@ val_dataset = manifest_train[-n:]
 # val_dataset = Dataset(val_dataset, sample = None, coef_norm = coef_norm)
 # torch.save(val_dataset, 'Dataset/val_dataset')
 
+
+
 '''
-USING OWN DATA HERE, OVERFITTING ON 30 foils
+USING OWN DATA HERE, OVERFITTING ON 20 foils
 When doing a proper go at it, randomise all 1830 into 2 groups of 70:30 
 '''
 
-t_split = 0.7
-num_foils = 20
+t_split = 0.8
+num_foils = 5
 scaler = MinMaxScaler()
 # scaler = StandardScaler()
 
 # train_idx = []
 # test_idx = []
 
-
 print('-----------------------------------------------')
 print( 'Running: '+ args.model + f'             for {num_foils} airfoils')
 print('-----------------------------------------------')
 
 val_set = range((int(num_foils*t_split)), num_foils)
-
+# val_set = 0
 coef_norm = None
 d_set = []
 train_dataset = []
 val_dataset = []
+
+d_init = data_loader(0,7)
+scaler.fit(d_init.y)
+
 for foil in tqdm(range(int(num_foils*t_split)), desc="Loading Training Data"):
     for alf in range(24):
         data = data_loader(foil, alf)
-        data.x = torch.tensor(scaler.fit_transform(data.x)).to(torch.float32)
-        data.y = torch.tensor(scaler.fit_transform(data.y)).to(torch.float32)
+        data.x = torch.tensor(scaler.transform(data.x)).to(torch.float32)
+        data.y = torch.tensor(scaler.transform(data.y)).to(torch.float32)
         train_dataset.append(data)
 for foil in tqdm(val_set, desc = "Loading Validation Data"):
     for alf in range(24):
         data = data_loader(foil, alf)
-        data.x = torch.tensor(scaler.fit_transform(data.x)).to(torch.float32)
-        data.y = torch.tensor(scaler.fit_transform(data.y)).to(torch.float32)
+        data.x = torch.tensor(scaler.transform(data.x)).to(torch.float32)
+        data.y = torch.tensor(scaler.transform(data.y)).to(torch.float32)
         val_dataset.append(data)
 
-
+# foil_n = 0
+# alpha = 10
+# data = data_loader(0,alpha)
+# # torch.set_printoptions(threshold=float('inf'))
+# # print(f'pre {data.x=}')
+# # print(f'pre {data.y=}')
+# scaler.fit(data.y)
+# data.x = torch.tensor(scaler.transform(data.x)).to(torch.float32)
+# data.y = torch.tensor(scaler.transform(data.y)).to(torch.float32)
+# # print(f'{data.x=}')
+# # print(f'{data.y=}')
+# train_dataset.append(data)
+# val_dataset.append(data)
+# # quit()
 
 # for foil in tqdm(range(num_foils), desc="Loading in Data"):
 #     for alf in range(24):
@@ -106,6 +125,7 @@ for foil in tqdm(val_set, desc = "Loading Validation Data"):
 # Cuda
 use_cuda = torch.cuda.is_available()
 device = 'cuda:0' if use_cuda else 'cpu'
+print('-----------------------------------------------')
 if use_cuda:
     print('Using GPU')
 else:
@@ -144,15 +164,37 @@ for i in range(args.nmodel):
     models.append(model)
 torch.save(models, osp.join(log_path, args.model))
 
+
+proc_tik = time.time()
+print('-----------------------------------------------')
+still_norm = val_outs
 for data in val_outs:
     data.x = scaler.inverse_transform(data.x.cpu())
     data.y = scaler.inverse_transform(data.y.cpu())
+post_process(val_outs, args.model, hparams, num_foils,'de_norm')
+post_process(still_norm, args.model, hparams, num_foils,'norm')
+print(f'Done:   {(time.time()-proc_tik)/60} mins')
 
-post_process(val_outs, args.model, hparams, num_foils)
-
-for foil_n in tqdm(val_set, desc='Saving Error Graphs'):
-    for alpha in range(24):
-        error_graphs(foil_n, alpha, num_foils, num_epochs, args.model)
+print('-----------------------------------------------')
+print('Creating Error Graphs...')
+err_tik = time.time()
+rmse_list = []
+dn_rmse_list = []
+proc_vars = ['rho_u', 'rho_v', 'rho_mag', 'e', 'omega']
+tqdm_err = tqdm(proc_vars)
+for var in tqdm_err:
+    for foil_n in val_set:
+        for alpha in range(24):
+            tqdm_err.set_postfix(foil=foil_n, alpha=alpha)
+            err = error_graphs(foil_n, alpha, num_foils, num_epochs, args.model, var, folder = 'norm')
+            err_dnorm = error_graphs(foil_n, alpha, num_foils, num_epochs, args.model, var, folder = 'de_norm')
+            rmse_list.append(err)
+            dn_rmse_list.append(err_dnorm)
+rmse_total = sum(rmse_list) / len(rmse_list)
+dn_rmse_total = sum(dn_rmse_list) / len(dn_rmse_list)
+print('-----------------------------------------------')
+print(f'Normalised RMSE Total = {rmse_total}')
+print(f'De-Normalised RMSE Total = {dn_rmse_total}')
 
 if bool(args.score):
     s = args.task + '_test' if args.task != 'scarce' else 'full_test'

@@ -1,0 +1,53 @@
+{
+            "regression": "Total",
+            "loss": "MSE",
+            "nb_parameters": 75181.0,
+            "time_elapsed": 5.706744909286499,
+            "hparams": {
+                        "encoder": [
+                                    5,
+                                    64,
+                                    64,
+                                    8
+                        ],
+                        "decoder": [
+                                    8,
+                                    64,
+                                    64,
+                                    5
+                        ],
+                        "base_nb": 8,
+                        "batch_size": 1,
+                        "nb_epochs": 1000,
+                        "lr": 0.001,
+                        "subsampling": 32000
+            },
+            "train_loss": 0.06095613166689873,
+            "val_loss": 0.06095613166689873
+}{
+            "regression": "Total",
+            "loss": "MSE",
+            "nb_parameters": 75181.0,
+            "time_elapsed": 3.498002767562866,
+            "hparams": {
+                        "encoder": [
+                                    5,
+                                    64,
+                                    64,
+                                    8
+                        ],
+                        "decoder": [
+                                    8,
+                                    64,
+                                    64,
+                                    5
+                        ],
+                        "base_nb": 8,
+                        "batch_size": 1,
+                        "nb_epochs": 1000,
+                        "lr": 0.001,
+                        "subsampling": 32000
+            },
+            "train_loss": 0.06732641160488129,
+            "val_loss": 0.06732632219791412
+}

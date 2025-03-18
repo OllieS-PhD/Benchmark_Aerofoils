@@ -89,7 +89,7 @@ def train(device, model, train_loader, optimizer, scheduler, criterion = 'RMSE',
     return avg_loss_iter,  avg_loss_var_iter
 
 @torch.no_grad()
-def test(device, model, test_loader, final_epoch, criterion = 'RMSE', mat_sz=5):
+def test(device, model, test_loader, criterion = 'RMSE', mat_sz=5):
     model.eval()
     final_outs = []
     avg_loss_per_var = np.zeros(mat_sz)
@@ -115,10 +115,9 @@ def test(device, model, test_loader, final_epoch, criterion = 'RMSE', mat_sz=5):
         
         avg_loss_per_var += loss_per_var.cpu().numpy()
         avg_loss += loss.cpu().numpy()
-        if final_epoch==True:
-            data_outs = data
-            data_outs.x = out
-            final_outs.append(data_outs)
+        data_outs = data
+        data_outs.x = out
+        final_outs.append(data_outs)
         iter += 1
     return final_outs, avg_loss/iter, avg_loss_per_var/iter 
 
@@ -154,7 +153,7 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'RM
         optimizer,
         mode='min',
         factor=0.1,
-        patience=0
+        patience=5
         )
     early_stopping = EarlyStopping(patience=10, delta=0.0001)
     val_loader = DataLoader(val_dataset, batch_size = 1)
@@ -166,7 +165,6 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'RM
 
     pbar_train = tqdm(range(hparams['nb_epochs']), position=0)
     for epoch in pbar_train:    
-        final_epoch = True if (epoch+1) == hparams['nb_epochs'] else False
         train_dataset_sampled = []
         for data in train_dataset:
             data_sampled = data.clone()
@@ -211,10 +209,10 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'RM
                             val_dataset_sampled.append(data_sampled)
                         val_loader = DataLoader(val_dataset_sampled, batch_size = 1, shuffle = True)
                         del(val_dataset_sampled)
-                        val_outs, val_loss, _ = test(device, model, val_loader, final_epoch, criterion)
+                        val_outs, val_loss, _ = test(device, model, val_loader,  criterion)
                         del(val_loader)
                 else:
-                    val_outs, val_loss, _ = test(device, model, val_loader, final_epoch, criterion)
+                    val_outs, val_loss, _ = test(device, model, val_loader, criterion)
                 
                 val_epochs.append(pbar_train)
                 train_loss_list.append(train_loss)
@@ -225,7 +223,6 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'RM
                 if early_stopping(val_loss, model):
                     print(f"\nEarly stopping at epoch {epoch}")
                     break
-                
                 pbar_train.set_postfix(train_loss = train_loss, val_loss = val_loss)
             else:
                 pbar_train.set_postfix(train_loss = train_loss, val_loss = val_loss)
@@ -274,7 +271,7 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'RM
     
     fig_both, ax_both = plt.subplots(figsize = (20, 5))
     ax_both.plot(train_loss_list, label = 'Training loss')
-    ax_train_vol.plot(x_axis, val_loss_list, label='Validation loss')
+    ax_both.plot(x_axis, val_loss_list, label='Validation loss')
     ax_both.set_xlabel('epochs')
     ax_both.set_yscale('log')
     ax_both.set_title('Train Losses:  ' + criterion)

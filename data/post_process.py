@@ -8,11 +8,11 @@ import h5py
 import os
 
 
-def post_process(val_outs, name_mod, hparams, num_foils=30):
+def post_process(val_outs, name_mod, hparams, num_foils=30, folder='norm'):
     vars = ["x","y","rho","rho_u","rho_v", "e", "omega"]
-    data_path = 'E:/network_outs/' + str(num_foils) + '_foils/' + str(hparams['nb_epochs']) + '_epochs/'+name_mod+'/'
+    data_path = 'E:/network_outs/' + str(num_foils) + '_foils/' + str(hparams['nb_epochs']) + '_epochs/'+name_mod+'/'+ folder+'/'
     
-    for gidx in tqdm(val_outs, desc='Saving Validation Outputs'):
+    for gidx in tqdm(val_outs, desc='Post Processing'):
         spec_out = gidx.cpu()
         # for i in range(5):
         #     print(i, spec_out.x[:,i])
@@ -37,13 +37,13 @@ def post_process(val_outs, name_mod, hparams, num_foils=30):
         file_path = data_path +'airfoil_'+str('{:04d}'.format(foil_n))+'.h5'
         if not os.path.exists(data_path):
             os.makedirs(data_path)
-            print(f'\nFile path {data_path} created...')
+            # print(f'\nFile path {data_path} created...')
         grp_path = 'aoa_'+str(alpha)
         with h5py.File(file_path, 'a') as hf:
             grp = hf.create_group(grp_path)
             grp.create_dataset('coeffs', data = (spec_out.cl,spec_out.cd))
             # grp.create_dataset('edges', data=spec_out.edge_index)#, compression = "gzip")
-            
+            grp.create_dataset('foil_geom', data=spec_out.foil_geom)
             # Loop through each attribute
             node_group = grp.create_group('x_nodes')
             for att in vars:        #tqdm(att_vars, desc='Creating Datasets'):
@@ -55,7 +55,7 @@ def post_process(val_outs, name_mod, hparams, num_foils=30):
                 att_data = [Y.nodes[nid][att] for nid in Y.nodes()]
                 y_group.create_dataset(att, data=att_data)
     
-    print("Validation Data Saved")
+    # print("Validation Data Saved")
     # node_values = data[:,1]
     # # node_values = G.nodes[:]['rho_u']
     # cmap=plt.cm.get_cmap('jet')

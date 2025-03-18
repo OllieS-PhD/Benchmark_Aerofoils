@@ -1,0 +1,27 @@
+{
+            "regression": "Total",
+            "loss": "MSE",
+            "nb_parameters": 75181.0,
+            "time_elapsed": 3.6447227001190186,
+            "hparams": {
+                        "encoder": [
+                                    5,
+                                    64,
+                                    64,
+                                    8
+                        ],
+                        "decoder": [
+                                    8,
+                                    64,
+                                    64,
+                                    5
+                        ],
+                        "base_nb": 8,
+                        "batch_size": 1,
+                        "nb_epochs": 1000,
+                        "lr": 0.001,
+                        "subsampling": 32000
+            },
+            "train_loss": 0.06643776595592499,
+            "val_loss": 0.06643766909837723
+}
