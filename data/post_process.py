@@ -23,6 +23,7 @@ def post_process(val_outs, name_mod, hparams, num_foils=30, folder='norm'):
         foil_n = int(spec_out.foil_n)
         # npedges = spec_out.edge_index.numpy()
         # edges = spec_out.edge_index#tuple(map(tuple, npedges.tolist()))
+        # print(f'Output {data=}')
         xk, yk = pos[:,0], pos[:,1]
         G = nx.Graph()
         Y = nx.Graph()
@@ -43,7 +44,7 @@ def post_process(val_outs, name_mod, hparams, num_foils=30, folder='norm'):
             grp = hf.create_group(grp_path)
             grp.create_dataset('coeffs', data = (spec_out.cl,spec_out.cd))
             # grp.create_dataset('edges', data=spec_out.edge_index)#, compression = "gzip")
-            grp.create_dataset('foil_geom', data=spec_out.foil_geom)
+            # grp.create_dataset('foil_geom', data=spec_out.foil_geom)
             # Loop through each attribute
             node_group = grp.create_group('x_nodes')
             for att in vars:        #tqdm(att_vars, desc='Creating Datasets'):

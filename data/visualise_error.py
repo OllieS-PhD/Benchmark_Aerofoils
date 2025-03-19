@@ -46,7 +46,7 @@ def error_graphs(foil_n, alpha, num_foils, epochs, name_mod, var, folder='norm')
     rho_mag_x = np.sqrt(np.square(x_data[1,:]) + np.square(x_data[2,:]))
     rho_mag_y = np.sqrt(np.square(y_data[1,:]) + np.square(y_data[2,:]))
     # rel_rho_mag = np.absolute(np.subtract(rho_mag_y, rho_mag_x))
-    rel_rho_mag = rho_mag_y
+    rel_rho_mag = rho_mag_x
     #Error Calc
     # data = np.transpose( np.absolute(np.subtract(y_data, x_data)) )#/ np.absolute(y_data) )
     data=np.transpose(x_data)
@@ -93,8 +93,8 @@ def error_graphs(foil_n, alpha, num_foils, epochs, name_mod, var, folder='norm')
     return RMSE
 
 if __name__ == "__main__":
-    num_foils = 150
-    num_epochs = 400
+    num_foils = 5
+    num_epochs = 50
     name_mod = ['MLP', 'PointNet', 'GUNet', 'GraphSAGE']
     proc_vars = ['rho_u', 'rho_v', 'rho_mag']
     val_set = [14, 15, 16, 17, 18, 19]
@@ -105,11 +105,13 @@ if __name__ == "__main__":
     #                 error_graphs(foil_n, alpha, num_foils, num_epochs, model, var)
     # error_graphs(18, 4, 20, 50, 'PointNet', 'rho_u')
     # plt.show()
-    model = 'PointNet'
-    foil_n = 18
+    model = 'MLP'
+    foil_n = 4
+    alpha = 10
     for var in proc_vars:
-        for alpha in tqdm(range(24), desc=f'{model} {var} foil_num{foil_n}'):
-            error_graphs(foil_n, alpha, num_foils, num_epochs, model, var)
+        # for alpha in tqdm(range(24), desc=f'{model} {var} foil_num{foil_n}'):
+        error_graphs(foil_n, alpha, num_foils, num_epochs, model, var, folder ='de_norm')
+        error_graphs(foil_n, alpha, num_foils, num_epochs, model, var, folder ='norm')
     
     
     # plt.show()

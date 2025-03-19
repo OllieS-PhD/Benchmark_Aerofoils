@@ -15,6 +15,7 @@ from tqdm import tqdm
 import multiprocessing
 
 import networkx as nx
+from shapely import distance
 from shapely.geometry import Polygon, Point
 import pyvista as pv
 
@@ -68,12 +69,12 @@ def dataSorter(foil_n, alpha):
     # plt.show()
     
     for i in range(mesh_sz):        #tqdm(range(mesh_sz), desc="Adding Nodes"):
-        G.add_node(i, x=xk[i], y=yk[i], rho=data[2,i], rho_u=data[3,i], rho_v=data[4,i], e=data[5,i], omega=data[6,i], airfoil = False)
+        G.add_node(i, x=xk[i], y=yk[i], rho=data[2,i], rho_u=data[3,i], rho_v=data[4,i], e=data[5,i], omega=data[6,i], airfoil = False, dist = 0)
     # for i in range(len(lm)):
     #     G.add_node(mesh_sz+i, rho = )
     pos = (nx.get_node_attributes(G, 'x'), nx.get_node_attributes(G, 'y')) 
 
-    # aero_poly = Polygon(lm)
+    aero_poly = Polygon(lm)
     # small_aero = aero_poly.buffer(-1e-5)
     
     # # Check each triangle and add edges only if it doesn't intersect the exclusion area
@@ -85,13 +86,15 @@ def dataSorter(foil_n, alpha):
     #         if not G.has_edge(simplex[0], simplex[1]): G.add_edge(simplex[0], simplex[1])
     #         if not G.has_edge(simplex[1], simplex[2]): G.add_edge(simplex[1], simplex[2])
     #         if not G.has_edge(simplex[2], simplex[0]): G.add_edge(simplex[2], simplex[0])
-    # buff_dist = 3.5e-6
-    # buff_poly = aero_poly.buffer(buff_dist)
-    # n_foil_points = 0
-    # for nid in G.nodes():
-    #     if buff_poly.contains( Point( (G.nodes[nid]['x'], G.nodes[nid]['y']) )):
-    #         G.nodes[nid]['airfoil'] = True
-    #         n_foil_points +=1
+    buff_dist = 3.5e-6
+    buff_poly = aero_poly.buffer(buff_dist)
+    n_foil_points = 0
+    for nid in G.nodes():
+        point = Point( (G.nodes[nid]['x'], G.nodes[nid]['y']) )
+        G.nodes[nid]['dist'] = distance(aero_poly, point)
+        if buff_poly.contains( point ):
+            G.nodes[nid]['airfoil'] = True
+            n_foil_points +=1
     # print(n_foil_points)
     
     
@@ -149,7 +152,7 @@ def dataSorter(foil_n, alpha):
 
 
 def worker(worker_num):
-    n_batch = 122
+    n_batch = 10
     start = 0 + ((n_batch)* worker_num)
     end = start + n_batch
     
