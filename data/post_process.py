@@ -10,10 +10,9 @@ import os
 
 def post_process(val_outs, name_mod, hparams, num_foils=30, folder='norm'):
     vars = ["x","y","rho","rho_u","rho_v", "e", "omega"]
-    data_path = 'E:/network_outs/' + str(num_foils) + '_foils/' + str(hparams['nb_epochs']) + '_epochs/'+name_mod+'/'+ folder+'/'
     
-    for gidx in tqdm(val_outs, desc='Post Processing'):
-        spec_out = gidx.cpu()
+    for gidx in tqdm(val_outs, desc=f'Post Processing {folder}alised'):
+        spec_out = gidx[0].cpu()
         # for i in range(5):
         #     print(i, spec_out.x[:,i])
         pos = spec_out.pos
@@ -21,6 +20,7 @@ def post_process(val_outs, name_mod, hparams, num_foils=30, folder='norm'):
         data_y = spec_out.y
         alpha = int(spec_out.alpha)
         foil_n = int(spec_out.foil_n)
+        data_path = 'E:/network_outs/' + str(num_foils) + '_foils/' + str(hparams['nb_epochs']) + '_epochs/'+name_mod+'/airfoil_'+str('{:04d}'.format(foil_n))+'/'
         # npedges = spec_out.edge_index.numpy()
         # edges = spec_out.edge_index#tuple(map(tuple, npedges.tolist()))
         # print(f'Output {data=}')
@@ -35,7 +35,7 @@ def post_process(val_outs, name_mod, hparams, num_foils=30, folder='norm'):
         #     v_add = edges[1,i].item()
         #     G.add_edge(u_add,v_add)
         
-        file_path = data_path +'airfoil_'+str('{:04d}'.format(foil_n))+'.h5'
+        file_path = data_path + folder +'.h5'
         if not os.path.exists(data_path):
             os.makedirs(data_path)
             # print(f'\nFile path {data_path} created...')

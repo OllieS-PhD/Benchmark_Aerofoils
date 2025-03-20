@@ -9,6 +9,8 @@ import torch
 import torch.nn as nn
 import torch_geometric.nn as nng
 from torch_geometric.loader import DataLoader
+from torch_geometric.data import Data, Batch
+
 
 import metrics
 
@@ -76,11 +78,11 @@ def train(device, model, train_loader, optimizer, scheduler, criterion = 'MSE', 
             L = (loss_vol + reg*loss_surf)          
         else:
             L = total_loss
-        
+        # L.retain_grad()
         L.backward()
         optimizer.step()
-        scheduler.step(L)
-        
+        scheduler.step()
+        # print(f'{L.grad.item()=}')
         avg_loss_per_var += loss_per_var
         avg_loss += total_loss
         avg_loss_surf_var += loss_surf_var
@@ -129,8 +131,8 @@ def test(device, model, test_loader, criterion = 'MSE', mat_sz = 5):
         avg_loss_surf += loss_surf.cpu().numpy()
         avg_loss_vol += loss_vol.cpu().numpy()  
         
-        data_outs = data
-        data_outs.x = out
+        data_clone.x = out
+        data_outs = data_clone.to_data_list()
         final_outs.append(data_outs)
         
         iter += 1
@@ -161,17 +163,17 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
 
     model = Net.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr = hparams['lr'])
-    # lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
-    #         optimizer,
-    #         max_lr = hparams['lr'],
-    #         total_steps = (len(train_dataset) // hparams['batch_size'] + 1) * hparams['nb_epochs'],
-    #     )
-    lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer,
-        mode='min',
-        factor=0.1,
-        patience=5
+    lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
+            optimizer,
+            max_lr = hparams['lr'],
+            total_steps = (len(train_dataset) // hparams['batch_size'] + 1) * hparams['nb_epochs'],
         )
+    # lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    #     optimizer,
+    #     mode='min',
+    #     factor=0.9,
+    #     patience=10
+    #     )
     early_stopping = EarlyStopping(patience=10, delta=0.0001)
     val_loader = DataLoader(val_dataset, batch_size = 1)
     start = time.time()
@@ -189,13 +191,22 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
     for epoch in pbar_train:        
         train_dataset_sampled = []
         for data in train_dataset:
+            data_sampled = data.clone()
+            
+            # idx = random.sample(range(data_sampled.x.size(0)), hparams['subsampling'])
+            # idx = torch.tensor(idx)
+
+            # data_sampled.pos = data_sampled.pos[idx]
+            # data_sampled.x = data_sampled.x[idx]
+            # data_sampled.y = data_sampled.y[idx]
+            # data_sampled.surf = data_sampled.surf[idx]
             
             if name_mod != 'PointNet' and name_mod != 'MLP':
-                data.edge_index = nng.radius_graph(x = data.pos.to(device), r = hparams['r'], loop = True, max_num_neighbors = int(hparams['max_neighbors'])).cpu()
-
-            # train_dataset_sampled.append(data)
-        train_loader = DataLoader(train_dataset, batch_size = hparams['batch_size'], shuffle = True)
-        # del(train_dataset_sampled)
+                data_sampled.edge_index = nng.radius_graph(x = data_sampled.pos.to(device), r = hparams['r'], loop = True, max_num_neighbors = int(hparams['max_neighbors'])).cpu()
+            
+            train_dataset_sampled.append(data_sampled)
+        train_loader = DataLoader(train_dataset_sampled, batch_size = hparams['batch_size'], shuffle = True)
+        del(train_dataset_sampled)
 
         train_loss, _, loss_surf_var, loss_vol_var, loss_surf, loss_vol = train(device, model, train_loader, optimizer, lr_scheduler, criterion, reg = reg)        
         if criterion == 'MSE_weighted':
@@ -215,6 +226,7 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
                         val_dataset_sampled = []
                         for data in val_dataset:
                             data_sampled = data.clone()
+                            
                             # idx = random.sample(range(data_sampled.x.size(0)), hparams['subsampling'])
                             # idx = torch.tensor(idx)
 
@@ -256,6 +268,8 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
                 if early_stopping(val_loss, model):
                     print(f"\nEarly stopping at epoch {epoch}")
                     break
+                elif hparams['nb_epochs'] - epoch > 5:
+                    del(val_outs)
                 
                 pbar_train.set_postfix(train_loss = train_loss, loss_surf = loss_surf, val_loss = val_loss, val_surf = val_surf)
             else:

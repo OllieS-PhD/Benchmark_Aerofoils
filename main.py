@@ -7,10 +7,7 @@ import numpy as np
 from tqdm import tqdm
 import time
 
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler, StandardScaler, normalize
-
-from normalise import normalise, denormalise, denormalise_ys
+from normalise import normalise, denormalise, denormalise_ys, fit
 from dataset import Dataset
 from data.visualise_error import error_graphs
 from data.post_process import post_process
@@ -30,8 +27,6 @@ args = parser.parse_args()
 #################################
 #       AIRFRANS DATA           #
 #################################
-
-
 # with open('E:/AirfRANS_Data/AirfRANS-main/Dataset/manifest.json', 'r') as f:
 #     manifest = json.load(f)
 
@@ -41,26 +36,10 @@ args = parser.parse_args()
 # train_dataset = manifest_train[:-n]
 # val_dataset = manifest_train[-n:]
 
-# # if os.path.exists('Dataset/train_dataset'):
-# #     train_dataset = torch.load('Dataset/train_dataset')
-# #     val_dataset = torch.load('Dataset/val_dataset')
-# #     coef_norm = torch.load('Dataset/normalization')
-# # else:
 # train_dataset, coef_norm = Dataset(train_dataset, norm = True, sample = None)
-# # torch.save(train_dataset, 'Dataset/train_dataset')
-# # torch.save(coef_norm, 'Dataset/normalization')
+
 # val_dataset = Dataset(val_dataset, sample = None, coef_norm = coef_norm)
 
-# # if os.path.exists('Dataset/train_dataset'):
-# #     train_dataset = torch.load('Dataset/train_dataset')
-# #     val_dataset = torch.load('Dataset/val_dataset')
-# #     coef_norm = torch.load('Dataset/normalization')
-# # else:
-# # train_dataset, coef_norm = Dataset(train_dataset, norm = True, sample = None)
-# # # torch.save(train_dataset, 'Dataset/train_dataset')
-# # # torch.save(coef_norm, 'Dataset/normalization')
-# # val_dataset = Dataset(val_dataset, sample = None, coef_norm = coef_norm)
-# # torch.save(val_dataset, 'Dataset/val_dataset')
 
 
 
@@ -69,10 +48,8 @@ USING OWN DATA HERE, OVERFITTING ON 20 foils
 When doing a proper go at it, randomise all 1830 into 2 groups of 70:30 
 '''
 
-t_split = 0.8
-num_foils = 5
-# x_scaler, y_scaler = MinMaxScaler(), MinMaxScaler()
-x_scaler, y_scaler = StandardScaler(), StandardScaler()
+t_split = 0.7
+num_foils = 20
 
 print('-----------------------------------------------')
 print( 'Running: '+ args.model + f'             for {num_foils} airfoils')
@@ -80,58 +57,37 @@ print('-----------------------------------------------')
 
 val_set = range((int(num_foils*t_split)), num_foils)
 # val_set = 0
-coef_norm = None
 d_set = []
 train_dataset = []
 val_dataset = []
-esp = 1e-10
-
-# d_init = data_loader(0,7)
-# set_scale_x = [[1.0, 0.1, 0.1, esp, esp, max(d_init.x[5,:])],
-#             [0, -0.1, -0.1, -esp, -esp, min(d_init.x[5,:])]]
-# set_scale_y = [[1.0, 0.1, 0.1, esp, esp],
-#             [0, -0.1, -0.1, -esp, -esp]]
-
-# x_scaler.fit(set_scale_x)
-# y_scaler.fit(set_scale_y)
-# print(f'pre: {d_init.x=}')
-# d_init.x = x_scaler.transform(d_init.x)
-# print(f'post: {d_init.x=}')
-# quit()
-# print(f'pre: {d_init.y=}')
-# d_init.y = y_scaler.fit_transform(d_init.y)
-# print(f'post: {d_init.y=}')
-# quit()
-
-# scaler.fit(d_init.y)
+norm_set = []
 
 for foil in tqdm(range(int(num_foils*t_split)), desc="Loading Training Data"):
     for alf in range(24):
         data = data_loader(foil, alf)
         train_dataset.append(data)
+        norm_set.append(data)
+        
 for foil in tqdm(val_set, desc = "Loading Validation Data"):
     for alf in range(24):
         data = data_loader(foil, alf)
         val_dataset.append(data)
-
-train_dataset, coeff_norm = normalise(train_dataset)
-val_dataset, _ = normalise(val_dataset, coeff_norm)
-print(coeff_norm)
-
-# foil_n = 0
-# alpha = 10
-# data = data_loader(0,alpha)
-# # torch.set_printoptions(threshold=float('inf'))
-# # print(f'pre {data.x=}')
-# # print(f'pre {data.y=}')
-# scaler.fit(data.y)
-# data.x = torch.tensor(scaler.transform(data.x)).to(torch.float32)
-# data.y = torch.tensor(scaler.transform(data.y)).to(torch.float32)
-# # print(f'{data.x=}')
-# # print(f'{data.y=}')
+        norm_set.append(data)
+# data = data_loader(4, 10)
 # train_dataset.append(data)
 # val_dataset.append(data)
-# # quit()
+# norm_set.append(data)
+coef_norm = fit(norm_set)
+del(norm_set)
+
+
+
+train_dataset = normalise(train_dataset, coef_norm)
+val_dataset  = normalise(val_dataset, coef_norm)
+
+# print(train_dataset[0])
+# print(train_dataset[0].x)
+# quit()
 
 
 
@@ -177,20 +133,22 @@ for i in range(args.nmodel):
     models.append(model)
 torch.save(models, osp.join(log_path, args.model))
 
+# print(f'{val_outs[0]=}')
 
 proc_tik = time.time()
 print('-----------------------------------------------')
-# still_norm = val_outs
-val_outs = denormalise_ys(val_outs, coeff_norm)
+still_norm = val_outs.copy()
+val_outs = denormalise_ys(val_outs, coef_norm)
+
 post_process(val_outs, args.model, hparams, num_foils,'de_norm')
-# post_process(still_norm, args.model, hparams, num_foils,'norm')
+post_process(still_norm, args.model, hparams, num_foils,'norm')
 print(f'Done:   {(time.time()-proc_tik)/60} mins')
 
-print('-----------------------------------------------')
-print('Creating Error Graphs...')
-err_tik = time.time()
-rmse_list = []
-dn_rmse_list = []
+# print('-----------------------------------------------')
+# print('Creating Error Graphs...')
+# err_tik = time.time()
+# rmse_list = []
+# dn_rmse_list = []
 proc_vars = ['rho_u', 'rho_v', 'rho_mag', 'e', 'omega']
 tqdm_err = tqdm(proc_vars)
 # for var in tqdm_err:

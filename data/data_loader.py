@@ -19,7 +19,7 @@ def data_loader(foil_n, alpha):
     alf_path = f'AoA_{alf}'
     vars = ["rho","rho_u","rho_v", "e", "omega", "dist"]#, "airfoil"]
     pos_vars = ["x", "y"]
-    data_path = 'Re_3M/Airfoil_' + '{:04d}'.format(foil_n) + '.h5'
+    data_path = 'E:/turb_model/Re_3M/Airfoil_' + '{:04d}'.format(foil_n) + '.h5'
     with h5py.File(data_path, 'r') as hf:
         mesh_sz = hf[alf_path]['nodes']['rho'][()].size
         data = np.empty((len(vars), mesh_sz))
