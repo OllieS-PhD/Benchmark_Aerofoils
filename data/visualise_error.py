@@ -12,7 +12,7 @@ import numpy as np
 from tqdm import tqdm
 
 
-def error_graphs(foil_n, alpha, num_foils, epochs, name_mod, var, folder='norm'):
+def error_graphs(foil_n, alpha, num_foils, epochs, name_mod, var, folder='norm', type='err'):
     
     path = 'E:/network_outs/' + str(num_foils) + '_foils/' + str(epochs) + '_epochs/'+name_mod+'/'+'airfoil_{:04d}'.format(foil_n)+'/'
     vars = ["rho","rho_u","rho_v", "e", "omega"]
@@ -45,11 +45,24 @@ def error_graphs(foil_n, alpha, num_foils, epochs, name_mod, var, folder='norm')
     #total rho_mag
     rho_mag_x = np.sqrt(np.square(x_data[1,:]) + np.square(x_data[2,:]))
     rho_mag_y = np.sqrt(np.square(y_data[1,:]) + np.square(y_data[2,:]))
-    # rel_rho_mag = np.absolute(np.subtract(rho_mag_y, rho_mag_x))
-    rel_rho_mag = rho_mag_y
+    rel_rho_mag = np.absolute(np.subtract(rho_mag_y, rho_mag_x))
+    
+    
     #Error Calc
-    data = np.transpose( np.absolute(np.subtract(y_data, x_data)) / np.absolute(y_data.mean()) )
-    # data=np.transpose(y_data)
+    if type == 'err':
+        data = np.transpose( np.absolute(np.subtract(y_data, x_data)/x_data) )
+        t_out = 'error'
+    elif type =='y':
+        data=np.transpose(y_data)
+        rel_rho_mag = rho_mag_y
+        t_out = 'ground_truth'
+    elif type =='x':
+        data=np.transpose(x_data)
+        rel_rho_mag = rho_mag_x
+        t_out = 'prediction'
+    else:
+        print('Invalid Data Type...')
+        return
     # if var == 'rho_u':
     #     for i in range(5):
     #         print(f'\n{data[:,i]=}')
@@ -82,36 +95,39 @@ def error_graphs(foil_n, alpha, num_foils, epochs, name_mod, var, folder='norm')
     cbar = plt.colorbar(sm, ax=ax)
     cbar.set_label(f'Relative Momentum ({var})', rotation=270, labelpad=15)
     
-    sv_path = path + f'graphs_{folder}/' + var
+    sv_path = path + f'graphs_{folder}/' + var +'/'+ t_out
     if not os.path.exists(sv_path):
         os.makedirs(sv_path)
     
-    fig.savefig(os.path.join(path, f'graphs_{folder}' ,var, f'{alpha}-AoA_{alf}_perc_err.png'),dpi = 150, bbox_inches = 'tight')
+    fig.savefig(os.path.join(path, f'graphs_{folder}' ,var, t_out, f'{alpha}-AoA_{alf}.png'),dpi = 150, bbox_inches = 'tight')
     # if var=='rho_u':
     #     plt.show()
     plt.close()
     return RMSE
 
 if __name__ == "__main__":
-    num_foils = 5
-    num_epochs = 50
-    name_mod = ['MLP', 'PointNet', 'GUNet', 'GraphSAGE']
+    num_foils = 20
+    num_epochs = 400
+    name_mod = ['MLP', 'PointNet', 'GraphSAGE']#, 'GUNet']
     proc_vars = ['rho_u', 'rho_v', 'rho_mag']
+    types = ['y', 'x', 'err']
     val_set = [14, 15, 16, 17, 18, 19]
-    # for model in name_mod:
-    #     for var in proc_vars:
-    #         for foil_n in val_set:
-    #             for alpha in tqdm(range(24), desc=f'{model} {var} foil_num{foil_n}'):
-    #                 error_graphs(foil_n, alpha, num_foils, num_epochs, model, var)
+    for model in name_mod:
+        for var in proc_vars:
+            for foil_n in val_set:
+                for alpha in tqdm(range(24), desc=f'{model} {var} foil_num{foil_n}'):
+                    for type in types:
+                        error_graphs(foil_n, alpha, num_foils, num_epochs, model, var, folder='norm', type=type)
+                        error_graphs(foil_n, alpha, num_foils, num_epochs, model, var, folder='de_norm', type=type)
     # error_graphs(18, 4, 20, 50, 'PointNet', 'rho_u')
+    # # plt.show()
+    # model = 'MLP'
+    # foil_n = 4
+    # alpha = 10
+    # for var in proc_vars:
+    #     # for alpha in tqdm(range(24), desc=f'{model} {var} foil_num{foil_n}'):
+    #     error_graphs(foil_n, alpha, num_foils, num_epochs, model, var, folder ='de_norm')
+    #     error_graphs(foil_n, alpha, num_foils, num_epochs, model, var, folder ='norm')
+    
+    
     # plt.show()
-    model = 'MLP'
-    foil_n = 4
-    alpha = 10
-    for var in proc_vars:
-        # for alpha in tqdm(range(24), desc=f'{model} {var} foil_num{foil_n}'):
-        error_graphs(foil_n, alpha, num_foils, num_epochs, model, var, folder ='de_norm')
-        error_graphs(foil_n, alpha, num_foils, num_epochs, model, var, folder ='norm')
-    
-    
-    plt.show()

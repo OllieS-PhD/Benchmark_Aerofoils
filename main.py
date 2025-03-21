@@ -6,6 +6,7 @@ import os.path as osp
 import numpy as np
 from tqdm import tqdm
 import time
+import copy
 
 from normalise import normalise, denormalise, denormalise_ys, fit
 from dataset import Dataset
@@ -48,6 +49,9 @@ USING OWN DATA HERE, OVERFITTING ON 20 foils
 When doing a proper go at it, randomise all 1830 into 2 groups of 70:30 
 '''
 
+from pathlib import Path
+
+
 t_split = 0.7
 num_foils = 20
 
@@ -55,38 +59,37 @@ print('-----------------------------------------------')
 print( 'Running: '+ args.model + f'             for {num_foils} airfoils')
 print('-----------------------------------------------')
 
-val_set = range((int(num_foils*t_split)), num_foils)
 # val_set = 0
+val_set = range((int(num_foils*t_split)), num_foils)
 d_set = []
 train_dataset = []
 val_dataset = []
-norm_set = []
 
 for foil in tqdm(range(int(num_foils*t_split)), desc="Loading Training Data"):
     for alf in range(24):
         data = data_loader(foil, alf)
         train_dataset.append(data)
-        norm_set.append(data)
-        
+
 for foil in tqdm(val_set, desc = "Loading Validation Data"):
     for alf in range(24):
         data = data_loader(foil, alf)
         val_dataset.append(data)
-        norm_set.append(data)
-# data = data_loader(4, 10)
-# train_dataset.append(data)
-# val_dataset.append(data)
+# for alf in range(24):
+#     data = data_loader(4, alf)
+#     train_dataset.append(data)
+#     val_dataset.append(data)
 # norm_set.append(data)
-coef_norm = fit(norm_set)
-del(norm_set)
 
 
+coef_norm = fit(train_dataset)
+
+# print(train_dataset[0].y)
 
 train_dataset = normalise(train_dataset, coef_norm)
 val_dataset  = normalise(val_dataset, coef_norm)
 
-# print(train_dataset[0])
-# print(train_dataset[0].x)
+# # print(train_dataset[0])
+# print(train_dataset[0].y)
 # quit()
 
 
@@ -128,47 +131,54 @@ for i in range(args.nmodel):
     
     num_epochs=hparams['nb_epochs'] 
     log_path = osp.join('metrics', f'{str(num_foils)}_foils', f'{str(num_epochs)}_epochs' ,args.task, args.model) # path where you want to save log and figures    
-    model, val_outs = train.main(device, train_dataset, val_dataset, model, hparams, log_path, 
+    model, val_outs_norm = train.main(device, train_dataset, val_dataset, model, hparams, log_path, coef_norm, 
                 criterion = 'MSE', val_iter = 10, reg = args.weight, name_mod = args.model, val_sample = True)
     models.append(model)
 torch.save(models, osp.join(log_path, args.model))
 
-# print(f'{val_outs[0]=}')
-
 proc_tik = time.time()
 print('-----------------------------------------------')
-still_norm = val_outs.copy()
-val_outs = denormalise_ys(val_outs, coef_norm)
 
-post_process(val_outs, args.model, hparams, num_foils,'de_norm')
-post_process(still_norm, args.model, hparams, num_foils,'norm')
+
+val_outs_denorm = copy.deepcopy(val_outs_norm)
+val_outs_denorm = denormalise_ys(val_outs_denorm, coef_norm)
+
+post_process(val_outs_denorm, args.model, hparams, num_foils,'de_norm')
+post_process(val_outs_norm, args.model, hparams, num_foils,'norm')
 print(f'Done:   {(time.time()-proc_tik)/60} mins')
 
-# print('-----------------------------------------------')
-# print('Creating Error Graphs...')
-# err_tik = time.time()
-# rmse_list = []
-# dn_rmse_list = []
+print('-----------------------------------------------')
+print('Creating Error Graphs...')
+err_tik = time.time()
+rmse_list = []
+dn_rmse_list = []
 proc_vars = ['rho_u', 'rho_v', 'rho_mag', 'e', 'omega']
-tqdm_err = tqdm(proc_vars)
-# for var in tqdm_err:
-#     for foil_n in val_set:
-#         for alpha in range(24):
-#             tqdm_err.set_postfix(foil=foil_n, alpha=alpha)
-#             err = error_graphs(foil_n, alpha, num_foils, num_epochs, args.model, var, folder = 'norm')
-#             err_dnorm = error_graphs(foil_n, alpha, num_foils, num_epochs, args.model, var, folder = 'de_norm')
-#             rmse_list.append(err)
-#             dn_rmse_list.append(err_dnorm)
-# rmse_total = sum(rmse_list) / len(rmse_list)
-# dn_rmse_total = sum(dn_rmse_list) / len(dn_rmse_list)
-# print('-----------------------------------------------')
-# # print(f'Normalised RMSE Total = {rmse_total}')
-# print(f'De-Normalised RMSE Total = {dn_rmse_total}')
-foil_n = 4
-alpha = 10
-for var in tqdm_err:
-    err = error_graphs(foil_n, alpha, num_foils, num_epochs, args.model, var, folder = 'norm')
-    err_dnorm = error_graphs(foil_n, alpha, num_foils, num_epochs, args.model, var, folder = 'de_norm')
+types = ['x', 'y', 'err']
+tqdm_err = tqdm(val_set)
+
+for foil_n in tqdm_err:
+    for var in proc_vars:
+        for alpha in range(24):
+            for type in types:
+                tqdm_err.set_postfix(foil=foil_n, alpha=alpha)
+                err = error_graphs(foil_n, alpha, num_foils, num_epochs, args.model, var, folder = 'norm', type=type)
+                err_dnorm = error_graphs(foil_n, alpha, num_foils, num_epochs, args.model, var, folder = 'de_norm', type=type)
+                if types == 'err':
+                    rmse_list.append(err)
+                    dn_rmse_list.append(err_dnorm)
+rmse_total = sum(rmse_list) / len(rmse_list)
+dn_rmse_total = sum(dn_rmse_list) / len(dn_rmse_list)
+print('-----------------------------------------------')
+print(f'Normalised RMSE Total =     {rmse_total}')
+print(f'De-Normalised RMSE Total =  {dn_rmse_total}')
+print(f'Normalisation Coefs:        {coef_norm}')
+# foil_n = 4
+# alpha = 10
+# for alpha in range(24):
+#     for type in types:
+#         for var in tqdm_err:
+#             err = error_graphs(foil_n, alpha, num_foils, num_epochs, args.model, var, folder = 'norm', type=type)
+#             err_dnorm = error_graphs(foil_n, alpha, num_foils, num_epochs, args.model, var, folder = 'de_norm', type =type )
 
 if bool(args.score):
     s = args.task + '_test' if args.task != 'scarce' else 'full_test'

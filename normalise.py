@@ -22,13 +22,13 @@ def fit(dataset):
         # data.y = data.y/torch.tensor([Umean, Umean, .5*Umean**2, Umean], dtype = torch.float)
 
         if k == 0:
-            old_length = data.x.shape[0]
-            std_in = ((data.x - mean_in)**2).sum(axis = 0, dtype = np.double)/old_length
-            std_out = ((data.y - mean_out)**2).sum(axis = 0, dtype = np.double)/old_length
+            old_length = init.shape[0]
+            std_in = ((init - mean_in)**2).sum(axis = 0, dtype = np.double)/old_length
+            std_out = ((target - mean_out)**2).sum(axis = 0, dtype = np.double)/old_length
         else:
-            new_length = old_length + data.x.shape[0]
-            std_in += (((data.x - mean_in)**2).sum(axis = 0, dtype = np.double) - data.x.shape[0]*std_in)/new_length
-            std_out += (((data.y - mean_out)**2).sum(axis = 0, dtype = np.double) - data.x.shape[0]*std_out)/new_length
+            new_length = old_length + init.shape[0]
+            std_in += (((init - mean_in)**2).sum(axis = 0, dtype = np.double) - init.shape[0]*std_in)/new_length
+            std_out += (((target - mean_out)**2).sum(axis = 0, dtype = np.double) - target.shape[0]*std_out)/new_length
             old_length = new_length
     
     std_in = np.sqrt(std_in).astype(np.single)
@@ -41,8 +41,8 @@ def normalise(dataset, coeff_norm):
     mean_in, std_in, mean_out, std_out = coeff_norm
     # Normalize
     for data in dataset:
-        data.x = torch.tensor((data.x - mean_in)/(std_in + 1e-8), requires_grad=True, dtype=torch.float32)
-        data.y = torch.tensor((data.y - mean_out)/(std_out + 1e-8), requires_grad=True, dtype=torch.float32)
+        data.x = torch.tensor((np.array(data.x) - mean_in)/(std_in + 1e-8))
+        data.y = torch.tensor((np.array(data.y) - mean_out)/(std_out + 1e-8))
         # print(data.x[2:3,:])
         # quit()       
     return dataset

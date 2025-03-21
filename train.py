@@ -145,7 +145,7 @@ class NumpyEncoder(json.JSONEncoder):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
 
-def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MSE', reg = 1, val_iter = 10, name_mod = 'GraphSAGE', val_sample = True):
+def main(device, train_dataset, val_dataset, Net, hparams, path, coef_norm, criterion = 'MSE', reg = 1, val_iter = 10, name_mod = 'GraphSAGE', val_sample = True):
     '''
         Args:
         device (str): device on which you want to do the computation.
@@ -294,8 +294,9 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
     sns.set()
     fig_train_surf, ax_train_surf = plt.subplots(figsize = (20, 5))
     ax_train_surf.plot(train_loss_surf_list, label = 'Mean loss')
-    ax_train_surf.plot(loss_surf_var_list[:, 0], label = r'$v_x$ loss'); ax_train_surf.plot(loss_surf_var_list[:, 1], label = r'$v_y$ loss')
-    ax_train_surf.plot(loss_surf_var_list[:, 2], label = r'$p$ loss'); ax_train_surf.plot(loss_surf_var_list[:, 3], label = r'$\nu_t$ loss')
+    ax_train_surf.plot(loss_vol_var_list[:, 0], label = r'$rho$ loss'); ax_train_surf.plot(loss_vol_var_list[:, 1], label = r'$rho_u$ loss')
+    ax_train_surf.plot(loss_vol_var_list[:, 2], label = r'$rho_v$ loss'); ax_train_surf.plot(loss_vol_var_list[:, 3], label = r'$e$ loss')
+    ax_train_surf.plot(loss_vol_var_list[:, 4], label = r'$omega$ loss')
     ax_train_surf.set_xlabel('epochs')
     ax_train_surf.set_yscale('log')
     ax_train_surf.set_title('Train losses over the surface')
@@ -305,7 +306,7 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
     fig_train_vol, ax_train_vol = plt.subplots(figsize = (20, 5))
     ax_train_vol.plot(train_loss_vol_list, label = 'Mean loss')
     ax_train_vol.plot(loss_vol_var_list[:, 0], label = r'$rho$ loss'); ax_train_vol.plot(loss_vol_var_list[:, 1], label = r'$rho_u$ loss')
-    ax_train_vol.plot(loss_vol_var_list[:, 2], label = r'$rho_v$ loss'); ax_train_vol.plot(loss_vol_var_list[:, 3], label = r'$\ne$ loss')
+    ax_train_vol.plot(loss_vol_var_list[:, 2], label = r'$rho_v$ loss'); ax_train_vol.plot(loss_vol_var_list[:, 3], label = r'$e$ loss')
     ax_train_vol.plot(loss_vol_var_list[:, 4], label = r'$omega$ loss')
     ax_train_vol.set_xlabel('epochs')
     ax_train_vol.set_yscale('log')
@@ -316,8 +317,9 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
     if val_iter is not None:
         fig_val_surf, ax_val_surf = plt.subplots(figsize = (20, 5))
         ax_val_surf.plot(val_surf_list, label = 'Mean loss')
-        ax_val_surf.plot(val_surf_var_list[:, 0], label = r'$v_x$ loss'); ax_val_surf.plot(val_surf_var_list[:, 1], label = r'$v_y$ loss')
-        ax_val_surf.plot(val_surf_var_list[:, 2], label = r'$p$ loss'); ax_val_surf.plot(val_surf_var_list[:, 3], label = r'$\nu_t$ loss')
+        ax_val_surf.plot(loss_vol_var_list[:, 0], label = r'$rho$ loss'); ax_val_surf.plot(loss_vol_var_list[:, 1], label = r'$rho_u$ loss')
+        ax_val_surf.plot(loss_vol_var_list[:, 2], label = r'$rho_v$ loss'); ax_val_surf.plot(loss_vol_var_list[:, 3], label = r'$e$ loss')
+        ax_val_surf.plot(loss_vol_var_list[:, 4], label = r'$omega$ loss')
         ax_val_surf.set_xlabel('epochs')
         ax_val_surf.set_yscale('log')
         ax_val_surf.set_title('Validation losses over the surface')
@@ -326,13 +328,14 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
 
         fig_val_vol, ax_val_vol = plt.subplots(figsize = (20, 5))
         ax_val_vol.plot(val_vol_list, label = 'Mean loss')
-        ax_val_vol.plot(val_vol_var_list[:, 0], label = r'$v_x$ loss'); ax_val_vol.plot(val_vol_var_list[:, 1], label = r'$v_y$ loss')
-        ax_val_vol.plot(val_vol_var_list[:, 2], label = r'$p$ loss'); ax_val_vol.plot(val_vol_var_list[:, 3], label = r'$\nu_t$ loss')
+        ax_val_vol.plot(loss_vol_var_list[:, 0], label = r'$rho$ loss'); ax_val_vol.plot(loss_vol_var_list[:, 1], label = r'$rho_u$ loss')
+        ax_val_vol.plot(loss_vol_var_list[:, 2], label = r'$rho_v$ loss'); ax_val_vol.plot(loss_vol_var_list[:, 3], label = r'$e$ loss')
+        ax_val_vol.plot(loss_vol_var_list[:, 4], label = r'$omega$ loss')
         ax_val_vol.set_xlabel('epochs')
         ax_val_vol.set_yscale('log')
         ax_val_vol.set_title('Validation losses over the volume')
         ax_val_vol.legend(loc = 'best')
-        fig_val_vol.savefig(osp.join(path, 'val_loss_vol.png'), dpi = 150, bbox_inches = 'tight');
+        fig_val_vol.savefig(osp.join(path, 'val_loss_vol.png'), dpi = 150, bbox_inches = 'tight')
         
         if val_iter is not None:
             with open(osp.join(path, name_mod + '_log.json'), 'a') as f:
@@ -351,6 +354,10 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, criterion = 'MS
                         'val_loss_surf_var': val_surf_var_list[-1],
                         'val_loss_vol': val_vol_list[-1],
                         'val_loss_vol_var': val_vol_var_list[-1],
+                        'mean_in': coef_norm[0],
+                        'std_in': coef_norm[1],
+                        'mean_in': coef_norm[2],
+                        'std_in': coef_norm[3],
                     }, f, indent = 12, cls = NumpyEncoder
                 )
 

@@ -39,21 +39,21 @@ def data_loader(foil_n, alpha):
         # print([xk[i] for i in range(len(xk)) if xk[i] > 100])
         # print([data[5,i] for i in range(len(data[0])) if data[5,i] > 10])
         # quit()
-        foil_geom = np.array(foil_geom)
-        data = np.array(data)
-        data[5,:] = -data[5,:]
-        
-        radius = 0.7 # 2 # 4 # 7
-        
-        del_list = [i for i in range(mesh_sz) if np.sqrt( np.square(xk[i]-0.5) + np.square(yk[i]) ) > radius]
-        # del_list = [i for i in range(mesh_sz) if np.sqrt( np.square(xk[i]-1) + np.square(yk[i]) ) > 0.1]
-        # del_list = [i for i in range(mesh_sz) if ((xk[i] > 1.2) or (xk[i]<0.2) or (yk[i] > 0.5) or (yk[i] < 0.5))]
-        data = np.delete(data, del_list, axis=1)
-        foil_geom = torch.tensor(np.delete(foil_geom.T, del_list))
-        pos = np.delete(np.vstack((xk,yk)), del_list, axis=1)
-        pos = torch.tensor(pos.T)
-        # print(f'{len(data)}     {len(data[0])}')
-        
+    foil_geom = np.array(foil_geom)
+    data = np.array(data)
+    data[5,:] = -data[5,:]
+    
+    radius = 0.7 # 2 # 4 # 7
+    
+    del_list = [i for i in range(mesh_sz) if np.sqrt( np.square(xk[i]-0.5) + np.square(yk[i]) ) > radius]
+    # del_list = [i for i in range(mesh_sz) if np.sqrt( np.square(xk[i]-1) + np.square(yk[i]) ) > 0.1]
+    # del_list = [i for i in range(mesh_sz) if ((xk[i] > 1.2) or (xk[i]<0.2) or (yk[i] > 0.5) or (yk[i] < 0.5))]
+    data = np.delete(data, del_list, axis=1)
+    foil_geom = torch.tensor(np.delete(foil_geom.T, del_list))
+    pos = np.delete(np.vstack((xk,yk)), del_list, axis=1)
+    # print(f'{len(data)}     {len(data[0])}')
+    
+    
     # import matplotlib.pyplot as plt
     # import matplotlib
     # from matplotlib.colors import Normalize
@@ -109,7 +109,9 @@ def data_loader(foil_n, alpha):
     d_init[2,:] = rho_v_inf
     d_init[3,:] = eps
     d_init[4,:] = eps
-
+    
+    d_init = np.vstack((pos, d_init))
+    pos = torch.tensor(pos.T)
     data = np.delete(data, 5, 0)
     # for i in range(1,5):
     #     d_init[i,:] = eps
@@ -117,8 +119,8 @@ def data_loader(foil_n, alpha):
     # print(data)
     # print(d_init)
     # quit()
-    g_x = np.transpose(data)#.to(torch.float32)
-    ic_x = np.transpose(d_init)#.to(torch.float32)
+    g_x = torch.tensor(np.transpose(data)).to(torch.float32)
+    ic_x = torch.tensor(np.transpose(d_init)).to(torch.float32)
     
     # print(f'{ic_x=}')
     # print(f'{g_x=}')
