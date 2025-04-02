@@ -92,6 +92,8 @@ def error_graphs(foil_n, alpha, num_foils, epochs, name_mod, var, folder='norm',
     ax.set_title(f'Foil #{foil_n} at {alf} degrees AoA for {num_foils} foils over {epochs} epochs:     {name_mod}')
     fig.text(x=0,y=1,s=f'RMSE:    {RMSE}')
     nx.draw_networkx_nodes(G, pos=pos, node_color = node_colours, node_size=5)
+    # nx.draw_networkx_nodes(G, pos=pos,node_color='black',node_size=5)
+    plt.show()
     cbar = plt.colorbar(sm, ax=ax)
     cbar.set_label(f'Relative Momentum ({var})', rotation=270, labelpad=15)
     
@@ -112,15 +114,15 @@ if __name__ == "__main__":
     proc_vars = ['rho_u', 'rho_v', 'rho_mag']
     types = ['y', 'x', 'err']
     val_set = [14, 15, 16, 17, 18, 19]
-    for model in name_mod:
-        for var in proc_vars:
-            for foil_n in val_set:
-                for alpha in tqdm(range(24), desc=f'{model} {var} foil_num{foil_n}'):
-                    for type in types:
-                        error_graphs(foil_n, alpha, num_foils, num_epochs, model, var, folder='norm', type=type)
-                        error_graphs(foil_n, alpha, num_foils, num_epochs, model, var, folder='de_norm', type=type)
-    # error_graphs(18, 4, 20, 50, 'PointNet', 'rho_u')
-    # # plt.show()
+    # for model in name_mod:
+    #     for var in proc_vars:
+    #         for foil_n in val_set:
+    #             for alpha in tqdm(range(24), desc=f'{model} {var} foil_num{foil_n}'):
+    #                 for type in types:
+    #                     error_graphs(foil_n, alpha, num_foils, num_epochs, model, var, folder='norm', type=type)
+    #                     error_graphs(foil_n, alpha, num_foils, num_epochs, model, var, folder='de_norm', type=type)
+    error_graphs(18, 4, 20, 400, 'PointNet', 'rho_u', 'norm', 'x')
+    # plt.show()
     # model = 'MLP'
     # foil_n = 4
     # alpha = 10

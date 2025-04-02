@@ -41,8 +41,8 @@ def normalise(dataset, coeff_norm):
     mean_in, std_in, mean_out, std_out = coeff_norm
     # Normalize
     for data in dataset:
-        data.x = torch.tensor((np.array(data.x) - mean_in)/(std_in + 1e-8))
-        data.y = torch.tensor((np.array(data.y) - mean_out)/(std_out + 1e-8))
+        data.x = torch.tensor((np.array(data.x) - mean_in)/(std_in + 1e-8)).to(torch.float32)
+        data.y = torch.tensor((np.array(data.y) - mean_out)/(std_out + 1e-8)).to(torch.float32)
         # print(data.x[2:3,:])
         # quit()       
     return dataset
@@ -51,8 +51,8 @@ def denormalise(dataset, coef_norm):
     mean_in, std_in, mean_out, std_out = coef_norm 
     for data in dataset:
         # data = data.cpu()
-        data.x = torch.tensor(( np.array(data.x) * (std_in+1e-8) ) + mean_in)
-        data.y = torch.tensor(( np.array(data.y) * (std_out+1e-8) ) + mean_out)
+        data.x = torch.tensor(( np.array(data.x) * (std_in+1e-8) ) + mean_in).to(torch.float32)
+        data.y = torch.tensor(( np.array(data.y) * (std_out+1e-8) ) + mean_out).to(torch.float32)
     
     return dataset
 
@@ -61,7 +61,7 @@ def denormalise_ys(dataset, coef_norm):
     for l_data in dataset:
         data = l_data[0].cpu()
         # data = data.cpu()
-        data.x = torch.tensor(( np.array(data.x) * (std_out+1e-8) ) + mean_out)
-        data.y = torch.tensor(( np.array(data.y) * (std_out+1e-8) ) + mean_out)
+        data.x = torch.tensor(( np.array(data.x) * (std_out+1e-8) ) + mean_out).to(torch.float32)
+        data.y = torch.tensor(( np.array(data.y) * (std_out+1e-8) ) + mean_out).to(torch.float32)
     
     return dataset

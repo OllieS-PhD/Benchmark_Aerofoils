@@ -38,7 +38,7 @@ https://arxiv.org/pdf/2104.05225
 '''
 def dataSorter(foil_n, alpha):
     data_path_load = 'O:/WindAI_Data/raw/airfoil_2k_data.h5'
-    data_path_save = 'E:/turb_model/Re_3M/Airfoil_'+'{:04d}'.format(foil_n)+'.h5'
+    data_path_save = 'E:/turb_model/Re_3M_ValSet/Airfoil_'+'{:04d}'.format(foil_n)+'.h5'
     model='turb_model'
     Re='Re03000000'
     var = ["x","y","rho","rho_u","rho_v", "e", "omega"]
@@ -152,17 +152,17 @@ def dataSorter(foil_n, alpha):
 
 
 def worker(worker_num):
-    n_batch = 10
-    start = 0 + ((n_batch)* worker_num)
+    n_batch = 4
+    start = 1770 + ((n_batch)* worker_num)
     end = start + n_batch
     
     if worker_num == 0:
         for foil_i in tqdm(range(start, end), desc='Worker 0 Progress'):
-            for alph_i in range(24):
+            for alph_i in range(25):
                 dataSorter(foil_n=foil_i, alpha=alph_i)
     else:    
         for foil_i in range(start, end):
-            for alph_i in range(24):
+            for alph_i in range(25):
                 dataSorter(foil_n=foil_i, alpha=alph_i)
 
 

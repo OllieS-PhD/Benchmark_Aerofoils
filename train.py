@@ -178,10 +178,12 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, coef_norm, crit
     val_loader = DataLoader(val_dataset, batch_size = 1)
     start = time.time()
 
+    train_loss_list = []
     train_loss_surf_list = []
     train_loss_vol_list = []
     loss_surf_var_list = []
     loss_vol_var_list = []
+    val_loss_list = []
     val_surf_list = []
     val_vol_list = []
     val_surf_var_list = []
@@ -213,6 +215,7 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, coef_norm, crit
             train_loss = reg*loss_surf + loss_vol
         del(train_loader)
 
+        train_loss_list.append(train_loss)
         train_loss_surf_list.append(loss_surf)
         train_loss_vol_list.append(loss_vol)
         loss_surf_var_list.append(loss_surf_var)
@@ -244,6 +247,7 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, coef_norm, crit
 
                         val_outs, val_loss, _, val_surf_var, val_vol_var, val_surf, val_vol = test(device, model, val_loader, criterion)
                         del(val_loader)
+                        val_loss_list.append(val_loss)
                         val_surf_vars.append(val_surf_var)
                         val_vol_vars.append(val_vol_var)
                         val_surfs.append(val_surf)
@@ -257,6 +261,7 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, coef_norm, crit
 
                 if criterion == 'MSE_weigthed':
                     val_loss = reg*val_surf + val_vol
+                val_loss_list.append(val_loss)
                 val_surf_list.append(val_surf)
                 val_vol_list.append(val_vol)
                 val_surf_var_list.append(val_surf_var)
@@ -292,6 +297,23 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, coef_norm, crit
     torch.save(model, osp.join(path, 'model'))
 
     sns.set()
+    
+    fig_train_tot, ax_train_tot = plt.subplots(figsize = (20, 5))
+    ax_train_tot.plot(train_loss_list, label = 'Training loss')
+    ax_train_tot.set_xlabel('epochs')
+    ax_train_tot.set_yscale('log')
+    ax_train_tot.set_title('Train Losses:  ' + criterion)
+    ax_train_tot.legend(loc = 'best')
+    fig_train_tot.savefig(osp.join(path, f'{criterion}_total_train_loss.png'), dpi = 150, bbox_inches = 'tight')
+
+    fig_val_tot, ax_val_tot = plt.subplots(figsize = (20, 5))
+    ax_val_tot.plot(val_loss_list, label='Validation loss')
+    ax_val_tot.set_xlabel('epochs')
+    ax_val_tot.set_yscale('log')
+    ax_val_tot.set_title('Total Val Losses:  ' + criterion)
+    ax_val_tot.legend(loc = 'best')
+    fig_val_tot.savefig(osp.join(path, f'{criterion}_total_val_loss.png'), dpi = 150, bbox_inches = 'tight')
+    
     fig_train_surf, ax_train_surf = plt.subplots(figsize = (20, 5))
     ax_train_surf.plot(train_loss_surf_list, label = 'Mean loss')
     ax_train_surf.plot(loss_vol_var_list[:, 0], label = r'$rho$ loss'); ax_train_surf.plot(loss_vol_var_list[:, 1], label = r'$rho_u$ loss')
@@ -354,10 +376,7 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, coef_norm, crit
                         'val_loss_surf_var': val_surf_var_list[-1],
                         'val_loss_vol': val_vol_list[-1],
                         'val_loss_vol_var': val_vol_var_list[-1],
-                        'mean_in': coef_norm[0],
-                        'std_in': coef_norm[1],
-                        'mean_in': coef_norm[2],
-                        'std_in': coef_norm[3],
+                        'coef_norm': coef_norm,
                     }, f, indent = 12, cls = NumpyEncoder
                 )
 
