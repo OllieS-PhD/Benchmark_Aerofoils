@@ -22,6 +22,8 @@ parser.add_argument('-n', '--nmodel', help = 'Number of trained models for stand
 parser.add_argument('-w', '--weight', help = 'Weight in front of the surface loss (default: 1)', default = 1, type = float)
 parser.add_argument('-t', '--task', help = 'Task to train on. Choose between "full", "scarce", "reynolds" and "aoa" (default: full)', default = 'full', type = str)
 parser.add_argument('-s', '--score', help = 'If you want to compute the score of the models on the associated test set. (default: 0)', default = 0, type = int)
+parser.add_argument('-f', '--foils', help = 'Number of foils to train on', default = 5, type = int)
+parser.add_argument('-e', '--epochs', help = 'Number of epochs to train over', default = 400, type = int)
 args = parser.parse_args()
 
 
@@ -53,7 +55,7 @@ from pathlib import Path
 
 
 t_split = 0.7
-num_foils = 5
+num_foils = args.foils
 
 print('-----------------------------------------------')
 print('-----------------------------------------------')
@@ -134,10 +136,10 @@ for i in range(args.nmodel):
         from models.GUNet import GUNet
         model = GUNet(hparams, encoder, decoder)   
     
-    num_epochs=hparams['nb_epochs'] 
+    num_epochs=args.epochs
     log_path = osp.join('metrics', f'{str(num_foils)}_foils', f'{str(num_epochs)}_epochs' ,args.model) # path where you want to save log and figures    
     model, val_outs_norm = train.main(device, train_dataset, val_dataset, model, hparams, log_path, coef_norm, 
-                criterion = 'MSE', val_iter = 10, reg = args.weight, name_mod = args.model, val_sample = True)
+                criterion = 'MSE', val_iter = 10, reg = args.weight, name_mod = args.model, val_sample = True, num_epochs=num_epochs)
     models.append(model)
 torch.save(models, osp.join(log_path, args.model))
 
@@ -148,8 +150,8 @@ print('-----------------------------------------------')
 val_outs_denorm = copy.deepcopy(val_outs_norm)
 val_outs_denorm = denormalise_ys(val_outs_denorm, coef_norm)
 
-post_process(val_outs_denorm, args.model, hparams, num_foils,'de_norm')
-post_process(val_outs_norm, args.model, hparams, num_foils,'norm')
+# post_process(val_outs_denorm, args.model, hparams, num_foils,'de_norm')
+# post_process(val_outs_norm, args.model, hparams, num_foils,'norm')
 print(f'Done:   {(time.time()-proc_tik)/60} mins')
 
 # print('-----------------------------------------------')

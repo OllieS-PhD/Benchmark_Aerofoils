@@ -25,9 +25,9 @@ def integrate(vertices, om_values):
             (v2[0] - v1[0]) * (v3[1] - v1[1]) -
             (v3[0] - v1[0]) * (v2[1] - v1[1])
         )
-        # Average P and accumulate integral
-        avg_p = np.mean(om)
-        total_integral += area * avg_p
+        # Average omega and accumulate integral
+        avg_om = np.mean(om)
+        total_integral += area * avg_om
     
     return total_integral
 
@@ -82,8 +82,8 @@ def lift_ceof(val_outs, coef_norm):
         # print('--------------')
         # print(cl, cl_target)
         
-        loss = nn.MSELoss(reduction='none')
-        mse_loss = loss(cl, cl_target).mean(dim=0)
+        loss = nn.MSELoss()
+        mse_loss = loss(cl, cl_target)
         root = math.sqrt(mse_loss)
         
         mse += mse_loss.cpu().numpy()
@@ -97,20 +97,25 @@ def lift_ceof(val_outs, coef_norm):
     return rmse/iter, mse/iter, out_list
 
 
-def err_data(out_list):
-    avg_rmse = []
-    max_rmse = []
-    min_rmse = []
+def err_data(n_val_foils, out_list):
     box_plt = []
+    fbf = []
     for alpha in range(25):
         alf = alpha-4
         err_list = []
         for i in range(len(out_list)):
             if out_list[i][1] == alf:
                 err_list.append(out_list[i][2])
-        # print(err_list)
-        avg_rmse.append( sum(err_list) / len(err_list) )
-        max_rmse.append(max(err_list))
-        min_rmse.append(min(err_list))
         box_plt.append(err_list)
-    return avg_rmse, max_rmse, min_rmse, box_plt
+        
+        # foil-by-foil analysis
+    fbf= np.zeros((n_val_foils, 25))
+    for foil in range(n_val_foils):
+        foil_n = foil + 1770
+        for i in range(len(out_list)):
+            for alpha in range(25):
+                alf = alpha-4
+                if out_list[i][0] == foil_n and out_list[i][1] == alf:
+                    fbf[foil, alpha] = out_list[i][2]
+    
+    return box_plt, fbf

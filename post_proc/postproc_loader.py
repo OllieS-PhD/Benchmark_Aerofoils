@@ -43,6 +43,9 @@ def data_loader(foil_n, alpha):
     data = np.delete(data, del_list, axis=1)
     foil_geom = torch.tensor(np.delete(foil_geom.T, del_list))
     pos = np.delete(np.vstack((xk,yk)), del_list, axis=1)
+    for i in range(len(foil_geom)):
+        if pos[0,i] < 0:
+            foil_geom[i] == False
     # print(f'{len(data)}     {len(data[0])}')
         
     Re = 3e6

@@ -145,7 +145,7 @@ class NumpyEncoder(json.JSONEncoder):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
 
-def main(device, train_dataset, val_dataset, Net, hparams, path, coef_norm, criterion = 'MSE', reg = 1, val_iter = 10, name_mod = 'GraphSAGE', val_sample = True):
+def main(device, train_dataset, val_dataset, Net, hparams, path, coef_norm, criterion = 'MSE', reg = 1, val_iter = 10, name_mod = 'GraphSAGE', val_sample = True, num_epochs=400):
     '''
         Args:
         device (str): device on which you want to do the computation.
@@ -166,7 +166,7 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, coef_norm, crit
     lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
             optimizer,
             max_lr = hparams['lr'],
-            total_steps = (len(train_dataset) // hparams['batch_size'] + 1) * hparams['nb_epochs'],
+            total_steps = (len(train_dataset) // hparams['batch_size'] + 1) * num_epochs,
         )
     # lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     #     optimizer,
@@ -189,7 +189,7 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, coef_norm, crit
     val_surf_var_list = []
     val_vol_var_list = []
     
-    pbar_train = tqdm(range(hparams['nb_epochs']), position=0, desc='epochs')
+    pbar_train = tqdm(range(num_epochs), position=0, desc='epochs')
     for epoch in pbar_train:        
         train_dataset_sampled = []
         for data in train_dataset:
@@ -273,7 +273,7 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, coef_norm, crit
                 if early_stopping(val_loss, model):
                     print(f"\nEarly stopping at epoch {epoch}")
                     break
-                elif hparams['nb_epochs'] - epoch > 5:
+                elif num_epochs - epoch > 5:
                     del(val_outs)
                 
                 pbar_train.set_postfix(train_loss = train_loss, loss_surf = loss_surf, val_loss = val_loss, val_surf = val_surf)
@@ -316,9 +316,9 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, coef_norm, crit
     
     fig_train_surf, ax_train_surf = plt.subplots(figsize = (20, 5))
     ax_train_surf.plot(train_loss_surf_list, label = 'Mean loss')
-    ax_train_surf.plot(loss_vol_var_list[:, 0], label = r'$rho$ loss'); ax_train_surf.plot(loss_vol_var_list[:, 1], label = r'$rho_u$ loss')
-    ax_train_surf.plot(loss_vol_var_list[:, 2], label = r'$rho_v$ loss'); ax_train_surf.plot(loss_vol_var_list[:, 3], label = r'$e$ loss')
-    ax_train_surf.plot(loss_vol_var_list[:, 4], label = r'$omega$ loss')
+    ax_train_surf.plot(loss_surf_var_list[:, 0], label = r'$rho$ loss'); ax_train_surf.plot(loss_surf_var_list[:, 1], label = r'$sigma_u$ loss')
+    ax_train_surf.plot(loss_surf_var_list[:, 2], label = r'$sigma_v$ loss'); ax_train_surf.plot(loss_surf_var_list[:, 3], label = r'$e$ loss')
+    ax_train_surf.plot(loss_surf_var_list[:, 4], label = r'$omega$ loss')
     ax_train_surf.set_xlabel('epochs')
     ax_train_surf.set_yscale('log')
     ax_train_surf.set_title('Train losses over the surface')
@@ -327,8 +327,8 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, coef_norm, crit
 
     fig_train_vol, ax_train_vol = plt.subplots(figsize = (20, 5))
     ax_train_vol.plot(train_loss_vol_list, label = 'Mean loss')
-    ax_train_vol.plot(loss_vol_var_list[:, 0], label = r'$rho$ loss'); ax_train_vol.plot(loss_vol_var_list[:, 1], label = r'$rho_u$ loss')
-    ax_train_vol.plot(loss_vol_var_list[:, 2], label = r'$rho_v$ loss'); ax_train_vol.plot(loss_vol_var_list[:, 3], label = r'$e$ loss')
+    ax_train_vol.plot(loss_vol_var_list[:, 0], label = r'$rho$ loss'); ax_train_vol.plot(loss_vol_var_list[:, 1], label = r'$sigma_u$ loss')
+    ax_train_vol.plot(loss_vol_var_list[:, 2], label = r'$sigma_v$ loss'); ax_train_vol.plot(loss_vol_var_list[:, 3], label = r'$e$ loss')
     ax_train_vol.plot(loss_vol_var_list[:, 4], label = r'$omega$ loss')
     ax_train_vol.set_xlabel('epochs')
     ax_train_vol.set_yscale('log')
@@ -339,9 +339,9 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, coef_norm, crit
     if val_iter is not None:
         fig_val_surf, ax_val_surf = plt.subplots(figsize = (20, 5))
         ax_val_surf.plot(val_surf_list, label = 'Mean loss')
-        ax_val_surf.plot(loss_vol_var_list[:, 0], label = r'$rho$ loss'); ax_val_surf.plot(loss_vol_var_list[:, 1], label = r'$rho_u$ loss')
-        ax_val_surf.plot(loss_vol_var_list[:, 2], label = r'$rho_v$ loss'); ax_val_surf.plot(loss_vol_var_list[:, 3], label = r'$e$ loss')
-        ax_val_surf.plot(loss_vol_var_list[:, 4], label = r'$omega$ loss')
+        ax_val_surf.plot(val_surf_var_list[:, 0], label = r'$rho$ loss'); ax_val_surf.plot(val_surf_var_list[:, 1], label = r'$sigma_u$ loss')
+        ax_val_surf.plot(val_surf_var_list[:, 2], label = r'$sigma_v$ loss'); ax_val_surf.plot(val_surf_var_list[:, 3], label = r'$e$ loss')
+        ax_val_surf.plot(val_surf_var_list[:, 4], label = r'$omega$ loss')
         ax_val_surf.set_xlabel('epochs')
         ax_val_surf.set_yscale('log')
         ax_val_surf.set_title('Validation losses over the surface')
@@ -350,8 +350,8 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, coef_norm, crit
 
         fig_val_vol, ax_val_vol = plt.subplots(figsize = (20, 5))
         ax_val_vol.plot(val_vol_list, label = 'Mean loss')
-        ax_val_vol.plot(loss_vol_var_list[:, 0], label = r'$rho$ loss'); ax_val_vol.plot(loss_vol_var_list[:, 1], label = r'$rho_u$ loss')
-        ax_val_vol.plot(loss_vol_var_list[:, 2], label = r'$rho_v$ loss'); ax_val_vol.plot(loss_vol_var_list[:, 3], label = r'$e$ loss')
+        ax_val_vol.plot(loss_vol_var_list[:, 0], label = r'$rho$ loss'); ax_val_vol.plot(loss_vol_var_list[:, 1], label = r'$sigma_u$ loss')
+        ax_val_vol.plot(loss_vol_var_list[:, 2], label = r'$sigma_v$ loss'); ax_val_vol.plot(loss_vol_var_list[:, 3], label = r'$e$ loss')
         ax_val_vol.plot(loss_vol_var_list[:, 4], label = r'$omega$ loss')
         ax_val_vol.set_xlabel('epochs')
         ax_val_vol.set_yscale('log')
