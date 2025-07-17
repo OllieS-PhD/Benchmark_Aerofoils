@@ -1,18 +1,16 @@
 # Benchmarking machine learning models for predicting aerofoil performance
 
-This repository implements and benchmarks multiple deep learning models for computational fluid dynamics (CFD) surrogate modeling, enabling fast and accurate prediction of flow properties around airfoils at different angles of attack.
+## 💾 Data
+
+The data used in this repository is the 'turb_model' data from the '2k Shapes Data Sets' which can be found here: https://registry.opendata.aws/nrel-pds-windai/
+
+For a breakdown of the available data, see the NREL GitHub repository here: https://github.com/NREL/windAI_bench
 
 ## 🚀 Overview
 
 This repository addresses the computational challenge of aerodynamic flow simulation by replacing expensive CFD computations with fast neural network predictions. The framework supports multiple state-of-the-art architectures optimized for geometric deep learning on irregular mesh data.
 
 This repository is the code supplemetary for the paper published to EWTEC 2025, "Benchmarking machine learning models for predicting aerofoil performance", which can be found here: https://arxiv.org/abs/2504.15993
-
-## Data
-
-The data used in this repository is the 'turb_model' data from the '2k Shapes Data Sets' which can be found here: https://registry.opendata.aws/nrel-pds-windai/
-
-For a breakdown of the available data, see the NREL GitHub repository here: https://github.com/NREL/windAI_bench
 
 ### Key Features
 
