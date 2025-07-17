@@ -1,4 +1,4 @@
-# ReadMe
+# Benchmarking machine learning models for predicting aerofoil performance
 
 ## 💾 Data
 
