@@ -2,6 +2,7 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import time
 
 import time, json
 
@@ -105,11 +106,13 @@ def test(device, model, test_loader, criterion = 'MSE', mat_sz = 5):
     avg_loss_surf = 0
     avg_loss_vol = 0
     iter = 0
-
+    tok = []
     for data in test_loader:        
         data_clone = data.clone()
         data_clone = data_clone.to(device)
-        out = model(data_clone)       
+        tik = time.time()
+        out = model(data_clone)
+        tok.append(time.time()-tik)
 
         targets = data_clone.y
         if criterion == 'MSE' or 'MSE_weighted':
@@ -136,8 +139,7 @@ def test(device, model, test_loader, criterion = 'MSE', mat_sz = 5):
         final_outs.append(data_outs)
         
         iter += 1
-    
-    return final_outs, avg_loss/iter, avg_loss_per_var/iter, avg_loss_surf_var/iter, avg_loss_vol_var/iter, avg_loss_surf/iter, avg_loss_vol/iter
+    return final_outs, avg_loss/iter, avg_loss_per_var/iter, avg_loss_surf_var/iter, avg_loss_vol_var/iter, avg_loss_surf/iter, avg_loss_vol/iter, tok
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -245,7 +247,7 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, coef_norm, crit
                         val_loader = DataLoader(val_dataset_sampled, batch_size = 1, shuffle = True)
                         del(val_dataset_sampled)
 
-                        val_outs, val_loss, _, val_surf_var, val_vol_var, val_surf, val_vol = test(device, model, val_loader, criterion)
+                        val_outs, val_loss, _, val_surf_var, val_vol_var, val_surf, val_vol,_ = test(device, model, val_loader, criterion)
                         del(val_loader)
                         val_loss_list.append(val_loss)
                         val_surf_vars.append(val_surf_var)
@@ -257,7 +259,7 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, coef_norm, crit
                     val_surf = np.array(val_surfs).mean(axis = 0)
                     val_vol = np.array(val_vols).mean(axis = 0)
                 else:
-                    val_outs, val_loss, _, val_surf_var, val_vol_var, val_surf, val_vol = test(device, model, val_loader, criterion)
+                    val_outs, val_loss, _, val_surf_var, val_vol_var, val_surf, val_vol,_ = test(device, model, val_loader, criterion)
 
                 if criterion == 'MSE_weigthed':
                     val_loss = reg*val_surf + val_vol
@@ -377,7 +379,9 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, coef_norm, crit
                         'val_loss_vol': val_vol_list[-1],
                         'val_loss_vol_var': val_vol_var_list[-1],
                         'coef_norm': coef_norm,
+                        'n_params': params_model,
                     }, f, indent = 12, cls = NumpyEncoder
-                )
+                )#
+    plt.close()
 
     return model, val_outs

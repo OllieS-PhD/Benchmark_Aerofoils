@@ -13,7 +13,7 @@ def data_loader(foil_n, alpha):
     alf_path = f'AoA_{alf}'
     vars = ["rho","rho_u","rho_v", "e", "omega", "dist"]#, "airfoil"]
     pos_vars = ["x", "y"]
-    data_path = 'E:/turb_model/Re_3M_ValSet/Airfoil_' + '{:04d}'.format(foil_n) + '.h5'
+    data_path = 'E:/turb_model/Re_3M/Airfoil_' + '{:04d}'.format(foil_n) + '.h5'
     with h5py.File(data_path, 'r') as hf:
         mesh_sz = hf[alf_path]['nodes']['rho'][()].size
         data = np.empty((len(vars), mesh_sz))
@@ -108,10 +108,12 @@ if __name__ == "__main__":
     #     top_groups = [k for k in hf["AoA_0"]['nodes'].keys()]
     #     print(top_groups)
     
-    foil_n = 0
-    alpha = 7
+    foil_n = 1826
+    # alpha = 0
     tik = time.time()
-    g = data_loader(foil_n, alpha)
+    for alpha in range(25):
+        print(f"{alpha=}")
+        g = data_loader(foil_n, alpha)
     print(f'{g.foil_n=},     {g.alpha=}')
     print(f'{g.x=}')
     print(f'{g.y=}')

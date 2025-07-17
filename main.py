@@ -7,6 +7,8 @@ import numpy as np
 from tqdm import tqdm
 import time
 import copy
+import random
+import matplotlib.pyplot as plt
 
 from normalise import normalise, denormalise, denormalise_ys, fit
 from dataset import Dataset
@@ -58,17 +60,18 @@ t_split = 0.7
 num_foils = args.foils
 
 print('-----------------------------------------------')
+print( f'Loading {num_foils} airfoils')
 print('-----------------------------------------------')
-print( 'Running: '+ args.model + f'             for {num_foils} airfoils')
-print('-----------------------------------------------')
-
 # val_set = 0
-val_set = range((int(num_foils*t_split)), num_foils)
+set_list = random.sample(range(1770), num_foils)
+
+train_set = set_list[:round(len(set_list) * t_split)]
+val_set = set_list[round(len(set_list) * t_split):]
 d_set = []
 train_dataset = []
 val_dataset = []
 
-for foil in tqdm(range(int(num_foils*t_split)), desc="Loading Training Data"):
+for foil in tqdm(train_set, desc="Loading Training Data"):
     for alf in range(24):
         data = data_loader(foil, alf)
         train_dataset.append(data)
@@ -101,10 +104,13 @@ val_dataset  = normalise(val_dataset, coef_norm)
 
 
 
+print('-----------------------------------------------')
+print('-----------------------------------------------')
+print( 'Running: '+ args.model + f'             for {num_foils} airfoils')
+print('-----------------------------------------------')
 # Cuda
 use_cuda = torch.cuda.is_available()
 device = 'cuda:0' if use_cuda else 'cpu'
-print('-----------------------------------------------')
 if use_cuda:
     print('Using GPU')
 else:
@@ -143,8 +149,8 @@ for i in range(args.nmodel):
     models.append(model)
 torch.save(models, osp.join(log_path, args.model))
 
-proc_tik = time.time()
-print('-----------------------------------------------')
+# proc_tik = time.time()
+# print('-----------------------------------------------')
 
 
 val_outs_denorm = copy.deepcopy(val_outs_norm)
@@ -152,7 +158,7 @@ val_outs_denorm = denormalise_ys(val_outs_denorm, coef_norm)
 
 # post_process(val_outs_denorm, args.model, hparams, num_foils,'de_norm')
 # post_process(val_outs_norm, args.model, hparams, num_foils,'norm')
-print(f'Done:   {(time.time()-proc_tik)/60} mins')
+# print(f'Done:   {(time.time()-proc_tik)/60} mins')
 
 # print('-----------------------------------------------')
 # print('Creating Error Graphs...')
@@ -201,3 +207,4 @@ if bool(args.score):
         np.save(osp.join('scores', args.task, 'surf_coefs_' + str(n)), file)
     np.save(osp.join('scores', args.task, 'true_bls'), coefs[5])
     np.save(osp.join('scores', args.task, 'bls'), coefs[6])
+plt.close()

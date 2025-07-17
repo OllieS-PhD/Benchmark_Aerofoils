@@ -27,60 +27,55 @@ def data_loader(foil_n, alpha):
         lmx, lmy = hf[alf_path]['lm']['x'][:][()], hf[alf_path]['lm']['y'][:][()]
         lm = torch.tensor(np.vstack((lmx,lmy)).T)
         xk, yk = hf[alf_path]['nodes']['x'][:][()], hf[alf_path]['nodes']['y'][:][()]
-        # print('------------------------------------')
-        # print(f'Foil    {foil_n}        Alpha   {alf}')
-        # print(f'{len(data)}     {len(data[0])}')
-        #nodes
+        
         for i in range(len(vars)):
-            # print(hf[alf_path]['nodes'][vars[i]][:][()])
             data[i,:] = hf[alf_path]['nodes'][vars[i]][:][()]
         foil_geom = hf[alf_path]['nodes']["airfoil"][:][()]
-        # np.set_printoptions(threshold=sys.maxsize)
-        # print([xk[i] for i in range(len(xk)) if xk[i] > 100])
-        # print([data[5,i] for i in range(len(data[0])) if data[5,i] > 10])
-        # quit()
+        
     foil_geom = np.array(foil_geom)
     data = np.array(data)
     data[5,:] = -data[5,:]
     
-    radius = 0.7 # 2 # 4 # 7
+    radius = 300 #0.7 
     
     del_list = [i for i in range(mesh_sz) if np.sqrt( np.square(xk[i]-0.5) + np.square(yk[i]) ) > radius]
-    # del_list = [i for i in range(mesh_sz) if np.sqrt( np.square(xk[i]-1) + np.square(yk[i]) ) > 0.1]
-    # del_list = [i for i in range(mesh_sz) if ((xk[i] > 1.2) or (xk[i]<0.2) or (yk[i] > 0.5) or (yk[i] < 0.5))]
+
+    del_list = [i for i in range(mesh_sz) if np.sqrt( np.square(xk[i]) + np.square(yk[i]) ) > radius]
     data = np.delete(data, del_list, axis=1)
     foil_geom = torch.tensor(np.delete(foil_geom.T, del_list))
     pos = np.delete(np.vstack((xk,yk)), del_list, axis=1)
     # print(f'{len(data)}     {len(data[0])}')
+    pos = pos.T
     
+    import matplotlib.pyplot as plt
+    import matplotlib
+    from matplotlib.colors import Normalize
+    from matplotlib.cm import ScalarMappable
+    dist = data[5,:] 
+    G = nx.Graph()
+    for i in range(len(dist)):
+        G.add_node(i, pos=pos[i], dist=dist[i])
+    node_values = [G.nodes[nid]['dist'] for nid in G.nodes()]
+    cmap=matplotlib.colormaps['RdBu_r']
+    # Create a Normalize object
+    vmin = min(node_values)
+    vmax = max(node_values)
+    norm = Normalize(vmin, vmax)
     
-    # import matplotlib.pyplot as plt
-    # import matplotlib
-    # from matplotlib.colors import Normalize
-    # from matplotlib.cm import ScalarMappable
-    # dist = data[5,:] 
-    # G = nx.Graph()
-    # for i in range(len(dist)):
-    #     G.add_node(i, pos=pos[i], dist=dist[i])
-    # node_values = [G.nodes[nid]['dist'] for nid in G.nodes()]
-    # cmap=matplotlib.colormaps['RdBu_r']
-    # # Create a Normalize object
-    # vmin = min(node_values)
-    # vmax = max(node_values)
-    # norm = Normalize(vmin, vmax)
+    sm = ScalarMappable(cmap=cmap, norm = norm)
+    sm.set_array([])
     
-    # sm = ScalarMappable(cmap=cmap, norm = norm)
-    # sm.set_array([])
-    
-    # # Normalize the values
-    # node_colours = norm(node_values)
-    # node_colours = cmap(node_colours)
-    # fig, ax = plt.subplots(figsize = (20, 10))
-    # ax.set_title(f'Dist')
-    # nx.draw_networkx_nodes(G, pos=pos, node_color = node_colours, node_size=5)
-    # cbar = plt.colorbar(sm, ax=ax)
+    # Normalize the values
+    node_colours = norm(node_values)
+    node_colours = cmap(node_colours)
+    fig, ax = plt.subplots(figsize = (20, 10))
+    ax.set_title(f'Radius = {radius} chord lengths')
+    nx.draw_networkx_nodes(G, pos=pos, node_color=node_colours, node_size=5)
+    cbar = plt.colorbar(sm, ax=ax)
     # cbar.set_label(f'Dist ({dist})', rotation=270, labelpad=15)
-    # plt.show()
+    fig.savefig(f'./data/r={radius}_dist.png',dpi = 150, bbox_inches = 'tight')
+    quit()
+    plt.show()
         #edges
         # edge_arr = np.array(hf[alf_path]['edges'][()])
         # edge_data = torch.tensor(np.transpose(edge_arr)).to(torch.int64)
@@ -113,27 +108,11 @@ def data_loader(foil_n, alpha):
     d_init = np.vstack((pos, d_init))
     pos = torch.tensor(pos.T)
     data = np.delete(data, 5, 0)
-    # for i in range(1,5):
-    #     d_init[i,:] = eps
-    
-    # print(data)
-    # print(d_init)
-    # quit()
+
     g_x = torch.tensor(np.transpose(data)).to(torch.float32)
     ic_x = torch.tensor(np.transpose(d_init)).to(torch.float32)
     
-    # print(f'{ic_x=}')
-    # print(f'{g_x=}')
-    
-    # print(f'\n{rho_u_inf=}')
-    # print(f'{rho_v_inf=}')
-    # print(f'{ic_x=}')
-    # print(f'{g_x=}')
-    # print('--------------------------')
-    # # print(f'{d_init=}')
-    # # print(f'{data=}')
-    # print(f'{g_x=}')
-    # print(f'{ic_x=}')
+
     
     args = {
         'pos': pos,

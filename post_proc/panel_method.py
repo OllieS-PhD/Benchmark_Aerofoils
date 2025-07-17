@@ -47,8 +47,8 @@ def lift_ceof(val_outs, coef_norm):
         cl_target = data.cl
         preds = data.x
         rho = preds[:,0]
-        sig_u = preds[:,1]
-        sig_y = preds[:,2]
+        rho_u = preds[:,1]
+        rho_y = preds[:,2]
         e = preds[:,3]
         omega = preds[:,4]
         
@@ -91,15 +91,15 @@ def lift_ceof(val_outs, coef_norm):
         
         # print(f'cl_Target:  {cl_target}      cl_pred:    {cl}')
         
-        out_list.append([data.foil_n, data.alpha, root])
+        out_list.append([data.foil_n, data.alpha, root, cl_target, cl])
         iter += 1
     
     return rmse/iter, mse/iter, out_list
 
-
 def err_data(n_val_foils, out_list):
     box_plt = []
     fbf = []
+    fbf_tot = []
     for alpha in range(25):
         alf = alpha-4
         err_list = []
@@ -116,6 +116,15 @@ def err_data(n_val_foils, out_list):
             for alpha in range(25):
                 alf = alpha-4
                 if out_list[i][0] == foil_n and out_list[i][1] == alf:
-                    fbf[foil, alpha] = out_list[i][2]
+                    fbf[foil, alpha] = out_list[i][2]    
     
-    return box_plt, fbf
+    for foil_n in range(n_val_foils):
+        foil = foil_n + 1770
+        current = []
+        for i in range(len(out_list)):
+            if foil == out_list[i][0]:
+                current.append(out_list[i][2])
+        
+        fbf_tot.append(np.array(current).mean())
+    
+    return box_plt, fbf, fbf_tot
