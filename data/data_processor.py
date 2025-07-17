@@ -6,8 +6,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import altair as alt
-from scipy.stats import gaussian_kde
-from scipy.spatial import Delaunay
 import time
 import math
 from tqdm import tqdm
@@ -26,16 +24,6 @@ pd.set_option('display.max_rows', None)
 np.set_printoptions(threshold=sys.maxsize)
 alt.data_transformers.disable_max_rows()
 
-
-
-
-'''
-For dataLoader:
-https://pytorch-geometric.readthedocs.io/en/latest/generated/torch_geometric.data.Data.html
-https://pytorch-geometric.readthedocs.io/en/latest/_modules/torch_geometric/loader/neighbor_loader.html
-https://github.com/jordan7186/Edgeless-GNN-external/blob/main/utils.py#L646
-https://arxiv.org/pdf/2104.05225
-'''
 def dataSorter(foil_n, alpha):
     data_path_load = 'O:/WindAI_Data/raw/airfoil_2k_data.h5'
     data_path_save = 'E:/turb_model/Re_3M/Airfoil_'+'{:04d}'.format(foil_n)+'.h5'
@@ -57,17 +45,8 @@ def dataSorter(foil_n, alpha):
         alf = hf[model][Re]['alpha'][alpha][()]
         cl = hf[model][Re]['C_l'][foil_n,alpha][()]
         cd = hf[model][Re]['C_d'][foil_n,alpha][()]
-
-
     
     xk, yk = data[0,:], data[1,:]
-    X1 = np.vstack((xk,yk)).T
-    tri = Delaunay(X1)
-    # plt.figure()
-    # plt.plot(xk,yk,'.')
-    # plt.plot(lm[:,0], lm[:,1], '-')
-    # plt.show()
-    
     for i in range(mesh_sz):        #tqdm(range(mesh_sz), desc="Adding Nodes"):
         G.add_node(i, x=xk[i], y=yk[i], rho=data[2,i], rho_u=data[3,i], rho_v=data[4,i], e=data[5,i], omega=data[6,i], airfoil = False, dist = 0)
     # for i in range(len(lm)):
@@ -75,17 +54,7 @@ def dataSorter(foil_n, alpha):
     pos = (nx.get_node_attributes(G, 'x'), nx.get_node_attributes(G, 'y')) 
 
     aero_poly = Polygon(lm)
-    # small_aero = aero_poly.buffer(-1e-5)
     
-    # # Check each triangle and add edges only if it doesn't intersect the exclusion area
-    # for simplex in tri.simplices: # tqdm(tri.simplices, desc="Adding Edges"):
-    #     triangle = [X1[simplex[0]], X1[simplex[1]], X1[simplex[2]]]
-    #     triangle_polygon = Polygon(triangle)
-    #     # Skip triangles that intersect the exclusion polygon
-    #     if not small_aero.intersection(triangle_polygon):
-    #         if not G.has_edge(simplex[0], simplex[1]): G.add_edge(simplex[0], simplex[1])
-    #         if not G.has_edge(simplex[1], simplex[2]): G.add_edge(simplex[1], simplex[2])
-    #         if not G.has_edge(simplex[2], simplex[0]): G.add_edge(simplex[2], simplex[0])
     buff_dist = 3.5e-6
     buff_poly = aero_poly.buffer(buff_dist)
     n_foil_points = 0
@@ -95,20 +64,6 @@ def dataSorter(foil_n, alpha):
         if buff_poly.contains( point ):
             G.nodes[nid]['airfoil'] = True
             n_foil_points +=1
-    # print(n_foil_points)
-    
-    
-    #####################################################
-    #                                                   #
-    #                 Save to Processed                 #
-    #                                                   #
-    #####################################################
-    # adj_matrix = nx.to_numpy_array(G)
-    # node_attrs = {node: dict(G.nodes[node]) for node in G.nodes()}
-    # edge_attrs = {(u, v): dict(G.edges[u, v]) for u, v in G.edges()}
-    
-    # edges = list(G.edges())
-    # edge_arr = np.array(edges)
     
     att_vars = dict(G.nodes[0]).keys()
     # print(att_vars)
@@ -167,20 +122,8 @@ def worker(worker_num):
 
 
 if __name__ == '__main__':
-    # Set data path here
-    # for foil_i in tqdm(range(23,1830), desc="Foil Number"):
-    #     for alph_i in tqdm(range(24), desc="Alpha"):
-    #         print('\n\n')
-    #         print("###################################################################")
-    #         print(f"                     Foil Number {foil_i}/1830                               ")
-    #         print(f"                     Angle of Attack {alph_i-4}                               ")
-    #         print("###################################################################")
-    #         dataSorter(foil_n=foil_i, alpha=alph_i)
     tik = time.time()
-    # for i in range(24):
-    # dataSorter(0, 1)
-    # exit()
-    # print(f'Time for one blade:     {(time.time()-tik)/60} mins')
+    
     p0 = multiprocessing.Process(target = worker, args=(0,))
     p1 = multiprocessing.Process(target = worker, args=(1,))
     p2 = multiprocessing.Process(target = worker, args=(2,))

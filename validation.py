@@ -22,7 +22,7 @@ class NumpyEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 def print_lm(foils):
-    sv_path = 'C:/Users/olive/Documents/Code/eXFoil/eX-Foil/metrics/BestWorstFoils'
+    sv_path = './metrics/BestWorstFoils'
     lmxs, lmys = [], []
     for foil_n in foils:
         data_path = 'E:/turb_model/Re_3M/Airfoil_' + '{:04d}'.format(foil_n) + '.h5'
@@ -165,6 +165,27 @@ def val_run(num_foils, epochs, name_mod, loader, coef_norm, foil_range, n_val_fo
         plt.close()
     # plt.show()
 
+def load_normalisation_coefs(log_file_path):
+    """
+    Load normalisation coefficients from a JSON log file.
+    
+    Args:
+        log_file_path (str): Path to the JSON log file
+        
+    Returns:
+        normalisation_coefs: The normalisation coefficients (numpy array or original format)
+    """
+    try:
+        with open(log_file_path, 'r') as f:
+            data = json.load(f)
+            normalisation_coefs = data.get('normalisation_coefs', None)
+            return normalisation_coefs
+    except FileNotFoundError:
+        print(f"File not found: {log_file_path}")
+        return None
+    except json.JSONDecodeError:
+        print(f"Invalid JSON in file: {log_file_path}")
+        return None
 
 if __name__ == "__main__":
     models = ["MLP", "PointNet", "GraphSAGE", "GUNet"]
@@ -177,17 +198,6 @@ if __name__ == "__main__":
     # foil_load = [1790,1795]
     data_path = 'E:/turb_model/Re_3M'
     
-    # lm_foils = [1791, 1793, 1803, 1826, 1770, 1771, 1781, 1827]
-    # print_lm(lm_foils)
-    
-    
-    mean_in = np.array([ 5.7469070e-01, 1.1430148e-02, 1.0000000e+00, 9.8500215e-02, 1.2213878e-02, 1.0000000e-10 , 1.0000000e-10, -3.2870863e-02])
-    std_in = np.array([0.39590213, 0.11666541, 0., 0.00167162, 0.01202377, 0.,  0. , 0.07188722])
-    mean_out= np.array([0.997614324092865,0.05822429805994034,0.00889956671744585,1.7859368324279785,8.520916938781738])
-    std_out = np.array([0.006046931724995375,0.04685685411095619,0.03721456229686737,0.01004050299525261,259.51287841796875])
-    
-    coef_norm = mean_in, std_in, mean_out, std_out
-    
     lms = []
     for foil_n in tqdm(foil_load, desc='Loading Foils'):
         foil_name = 'Airfoil_' + '{:04d}'.format(foil_n) + '.h5'
@@ -196,10 +206,12 @@ if __name__ == "__main__":
             data = data_loader(foil_n, alpha)
             data_set.append(data)
     
-    data_set = normalise(data_set, coef_norm)
-    
-    loader = DataLoader(data_set, batch_size=1)
     pbar = tqdm(models, desc="Validating Models")
     for mod in pbar:
         for foil in foil_iter:
+            log_file_path = os.path.join('metrics', f'{foil}_foils', f'{400}_epochs' ,mod)
+            coef_norm = load_normalisation_coefs(log_file_path)
+            data_set = normalise(data_set, coef_norm)
+            loader = DataLoader(data_set, batch_size=1)
+            
             val_run(num_foils=foil, epochs=epoch_n, name_mod=mod, loader=loader, coef_norm=coef_norm, foil_range=foil_load, n_val_foils=n_val_foils)

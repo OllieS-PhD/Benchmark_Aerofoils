@@ -13,8 +13,6 @@ from torch_geometric.loader import DataLoader
 from torch_geometric.data import Data, Batch
 
 
-import metrics
-
 from tqdm import tqdm
 
 from pathlib import Path
@@ -378,8 +376,8 @@ def main(device, train_dataset, val_dataset, Net, hparams, path, coef_norm, crit
                         'val_loss_surf_var': val_surf_var_list[-1],
                         'val_loss_vol': val_vol_list[-1],
                         'val_loss_vol_var': val_vol_var_list[-1],
-                        'coef_norm': coef_norm,
-                        'n_params': params_model,
+                        'normalisation_coefs': coef_norm,
+                        'model_params': params_model,
                     }, f, indent = 12, cls = NumpyEncoder
                 )#
     plt.close()

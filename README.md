@@ -6,6 +6,8 @@ The data used in this repository is the 'turb_model' data from the '2k Shapes Da
 
 For a breakdown of the available data, see the NREL GitHub repository here: https://github.com/NREL/windAI_bench
 
+The raw data from the above links is processed using data/data_processor.py - due to the size of the data, separate SSDs were required and as such, the data paths will need to be edited.  
+
 ## 🚀 Overview
 
 This repository addresses the computational challenge of aerodynamic flow simulation by replacing expensive CFD computations with fast neural network predictions. The framework supports multiple state-of-the-art architectures optimized for geometric deep learning on irregular mesh data.
@@ -65,8 +67,9 @@ python main.py GraphSAGE -f 20 -e 400
 
 ### Model Evaluation
 ```bash
-# Custom validation run
-python validation.py --model GraphSAGE --foils 55
+# Validation run
+# Runs through all four models at trained with each number of foils
+python validation.py
 ```
 
 
@@ -82,8 +85,7 @@ set epochs=50 100 200 400
 for %%m in (%mod%) do (
 for %%f in (%foils%) do (
 python C:\\Users\\olive\\Documents\\Code\\eXFoil\\eX-Foil\\main.py %%m -f %%f -e 400
-)
-)
+))
 python C:\\Users\\olive\\Documents\\Code\\eXFoil\\eX-Foil\\validation.py
 ```
 
