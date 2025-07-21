@@ -51,17 +51,25 @@ val_set = set_list[round(len(set_list) * t_split):]
 d_set = []
 train_dataset = []
 val_dataset = []
-
+aug_bn = True
 
 for foil in tqdm(train_set, desc="Loading Training Data"):
     for alf in range(24):
         data = data_loader(foil, alf, file_path=file_path)
         train_dataset.append(data)
+        if aug_bn:
+            for i in range(3):
+                data = data_loader(foil, alf, file_path=file_path, trans_aug=aug_bn)
+                train_dataset.append(data)
 
 for foil in tqdm(val_set, desc = "Loading Validation Data"):
     for alf in range(24):
         data = data_loader(foil, alf, file_path=file_path)
         val_dataset.append(data)
+        if aug_bn:
+            for i in range(3):
+                data = data_loader(foil, alf, file_path=file_path, trans_aug=aug_bn)
+                val_dataset.append(data)
 
 coef_norm = fit(train_dataset)
 
