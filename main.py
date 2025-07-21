@@ -27,11 +27,24 @@ args = parser.parse_args()
 t_split = 0.7
 num_foils = args.foils
 
+work_path='E:/turb_model/Re_3M'
+laptop_fp = '../50_foils'
+
+location = 'laptop'
+#location = 'work'
+if location == 'laptop':
+    file_path = laptop_fp
+elif location == 'work':
+    file_path = work_path
+
 print('-----------------------------------------------')
 print( f'Loading {num_foils} airfoils')
 print('-----------------------------------------------')
 # val_set = 0
-set_list = random.sample(range(1770), num_foils)
+if location == 'laptop':
+    set_list = random.sample(range(num_foils), num_foils)
+else:
+    set_list = random.sample(range(1770), num_foils)
 
 train_set = set_list[:round(len(set_list) * t_split)]
 val_set = set_list[round(len(set_list) * t_split):]
@@ -39,7 +52,6 @@ d_set = []
 train_dataset = []
 val_dataset = []
 
-file_path='E:/turb_model/Re_3M'
 
 for foil in tqdm(train_set, desc="Loading Training Data"):
     for alf in range(24):
