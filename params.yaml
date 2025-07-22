@@ -1,5 +1,5 @@
 GraphSAGE:
-  encoder: [ 6, 64, 64, 8]
+  encoder: [8, 64, 64, 8]
   decoder: [8, 64, 64, 5]
 
   nb_hidden_layers: 3
@@ -13,7 +13,7 @@ GraphSAGE:
   r: 0.05
 
 PointNet:
-  encoder: [ 6, 64, 64, 8]
+  encoder: [8, 64, 64, 8]
   decoder: [8, 64, 64, 5]
 
   base_nb: 8
@@ -23,7 +23,7 @@ PointNet:
   subsampling: 32000
 
 MLP:
-  encoder: [ 6, 64, 64, 8]
+  encoder: [8, 64, 64, 8]
   decoder: [8, 64, 64, 5]
 
   nb_hidden_layers: 3
@@ -35,7 +35,7 @@ MLP:
   subsampling: 10000
 
 GUNet:
-  encoder: [ 6, 64, 64, 8]
+  encoder: [8, 64, 64, 8]
   decoder: [8, 64, 64, 5]
 
   layer: 'SAGE'

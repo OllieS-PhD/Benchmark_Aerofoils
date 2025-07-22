@@ -8,7 +8,7 @@ import torch
 from torch_geometric.data import Data
 
 
-def data_loader(foil_n, alpha, file_path='E:/turb_model/Re_3M', trans_aug=False):
+def data_loader(foil_n, alpha, file_path='E:/turb_model/Re_3M'):
     # Got to load in processed data into here
     alf = alpha-4
     alf_path = f'AoA_{alf}'
@@ -29,17 +29,11 @@ def data_loader(foil_n, alpha, file_path='E:/turb_model/Re_3M', trans_aug=False)
     foil_geom = np.array(foil_geom)
     data = np.array(data)
     data[5,:] = -data[5,:]
-        
+    
     radius = 0.7 
     del_list = [i for i in range(mesh_sz) if np.sqrt( np.square(xk[i]-0.5) + np.square(yk[i]) ) > radius]
     # del_list = [i for i in range(mesh_sz) if np.sqrt( np.square(xk[i]) + np.square(yk[i]) ) > radius]
-
-    if trans_aug:
-        aug_range = 200
-        # Randomly translate the data
-        xk += random.uniform(-aug_range, aug_range)
-        yk += random.uniform(-aug_range, aug_range)
-
+    
     data = np.delete(data, del_list, axis=1)
     foil_geom = torch.tensor(np.delete(foil_geom.T, del_list))
     pos = np.delete(np.vstack((xk,yk)), del_list, axis=1)
@@ -63,10 +57,8 @@ def data_loader(foil_n, alpha, file_path='E:/turb_model/Re_3M', trans_aug=False)
     d_init[0,:] = rho_inf
     d_init[1,:] = rho_u_inf
     d_init[2,:] = rho_v_inf
-    d_init = np.delete(d_init, 3, 0)  # Remove the 'e' variable
-    d_init = np.delete(d_init, 4, 0)  # Remove the 'omega' variable
-    # d_init[3,:] = eps
-    # d_init[4,:] = eps
+    d_init[3,:] = eps
+    d_init[4,:] = eps
     
     d_init = np.vstack((pos, d_init))
     pos = torch.tensor(pos.T)
