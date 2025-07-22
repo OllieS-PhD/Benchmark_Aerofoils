@@ -123,7 +123,7 @@ Model hyperparameters are defined in `params.yaml`:
 
 ```yaml
 GraphSAGE:
-  encoder: [6, 64, 64, 8]
+  encoder: [8, 64, 64, 8]
   decoder: [8, 64, 64, 5]
   nb_hidden_layers: 3
   size_hidden_layers: 64
