@@ -4,9 +4,10 @@ import torch
 import os
 import json
 import h5py
+import argparse
 
 from normalise import normalise
-from post_proc.postproc_loader import data_loader
+from data.data_loader import data_loader
 from post_proc.panel_method import lift_ceof, err_data
 from train import test
 
@@ -21,11 +22,11 @@ class NumpyEncoder(json.JSONEncoder):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
 
-def print_lm(foils):
+def print_lm(foils, dpath = 'E:/turb_model/Re_3M'):
     sv_path = './metrics/BestWorstFoils'
     lmxs, lmys = [], []
     for foil_n in foils:
-        data_path = 'E:/turb_model/Re_3M/Airfoil_' + '{:04d}'.format(foil_n) + '.h5'
+        data_path = dpath + '/Airfoil_' + '{:04d}'.format(foil_n) + '.h5'
         with h5py.File(data_path) as hf:
             lmxs.append(hf['AoA_0']['lm']['x'][:][()])
             lmys.append(hf['AoA_0']['lm']['y'][:][()])
@@ -72,7 +73,7 @@ def print_lm(foils):
     plt.show()
 
 
-def val_run(num_foils, epochs, name_mod, loader, coef_norm, foil_range, n_val_foils=60):
+def val_run(num_foils, epochs, name_mod, loader, coef_norm, foil_range, n_val_foils=60, dpath='E:/turb_model/Re_3M'):
     use_cuda = torch.cuda.is_available()
     device = 'cuda:0' if use_cuda else 'cpu'
     
@@ -144,7 +145,7 @@ def val_run(num_foils, epochs, name_mod, loader, coef_norm, foil_range, n_val_fo
         os.mkdir(fbf_sv)
     for foil in range(n_val_foils):
         foil_n = foil+1770
-        data_path = 'E:/turb_model/Re_3M/Airfoil_' + '{:04d}'.format(foil_n) + '.h5'
+        data_path = dpath + '/Airfoil_' + '{:04d}'.format(foil_n) + '.h5'
         with h5py.File(data_path, 'r') as hf:
             lmx, lmy = hf['AoA_0']['lm']['x'][:][()], hf['AoA_0']['lm']['y'][:][()]
             lm = torch.tensor(np.vstack((lmx,lmy)))
@@ -187,31 +188,57 @@ def load_normalisation_coefs(log_file_path):
         print(f"Invalid JSON in file: {log_file_path}")
         return None
 
-if __name__ == "__main__":
+parser = argparse.ArgumentParser()
+parser.add_argument('model', help = 'The model you want to train, choose between MLP, GraphSAGE, PointNet, GUNet, or Full_Test', type = str)
+parser.add_argument('-f', '--foil_batch', help = 'Number of foils model was trained on', default = 55, type = int)
+parser.add_argument('-n', '--nfoils', help = 'Number of foils to train on', default = 60, type = int)
+parser.add_argument('-s', '--foil_start', help = 'Foil number to start from', default = 1770, type = int)
+parser.add_argument('-e_train', '--epochs', help = 'Number of epochs model was trained on', default = 400, type = int)
+args = parser.parse_args()
+
+if args.model == 'Full_Test':
+    task = 'full'
     models = ["MLP", "PointNet", "GraphSAGE", "GUNet"]
     foil_iter = [5, 20, 55, 150]
-    epoch_n = 400
-    data_set = []
-    n_val_foils = 60
-    start = 1770
-    foil_load = range(start, start+n_val_foils)
-    # foil_load = [1790,1795]
-    data_path = 'E:/turb_model/Re_3M'
-    
-    lms = []
-    for foil_n in tqdm(foil_load, desc='Loading Foils'):
-        foil_name = 'Airfoil_' + '{:04d}'.format(foil_n) + '.h5'
-        foil_path = os.path.join(data_path, foil_name)
-        for alpha in range(25):
-            data = data_loader(foil_n, alpha)
-            data_set.append(data)
-    
+else:
+    task = 'partial'
+    models = [args.model]
+    foil_iter = [args.foil_batch]
+epoch_n = args.epochs
+n_val_foils = args.nfoils
+start = args.foil_start
+data_set = []
+foil_load = range(start, start+n_val_foils)
+# foil_load = [1790,1795]
+data_path = 'E:/turb_model/Re_3M'
+
+lms = []
+for foil_n in tqdm(foil_load, desc='Loading Foils'):
+    foil_name = 'Airfoil_' + '{:04d}'.format(foil_n) + '.h5'
+    foil_path = os.path.join(data_path, foil_name)
+    for alpha in range(25):
+        data = data_loader(foil_n, alpha)
+        data_set.append(data)
+
+# print(data_set[0].x.shape, data_set[0].y.shape)
+# quit()
+
+if task == 'full':
     pbar = tqdm(models, desc="Validating Models")
     for mod in pbar:
         for foil in foil_iter:
-            log_file_path = os.path.join('metrics', f'{foil}_foils', f'{400}_epochs' ,mod)
+            log_file_path = os.path.join('metrics', f'{foil}_foils', f'{400}_epochs' , mod, mod + '_log.json')
             coef_norm = load_normalisation_coefs(log_file_path)
             data_set = normalise(data_set, coef_norm)
             loader = DataLoader(data_set, batch_size=1)
-            
-            val_run(num_foils=foil, epochs=epoch_n, name_mod=mod, loader=loader, coef_norm=coef_norm, foil_range=foil_load, n_val_foils=n_val_foils)
+
+            val_run(num_foils=foil, epochs=epoch_n, name_mod=mod, loader=loader, coef_norm=coef_norm, foil_range=foil_load, n_val_foils=n_val_foils, dpath=data_path)
+else:
+    mod = models[0]
+    foil = foil_iter[0]
+    log_file_path = os.path.join('metrics', f'{foil}_foils', f'{400}_epochs' , mod, mod + '_log.json')
+    coef_norm = load_normalisation_coefs(log_file_path)
+    data_set = normalise(data_set, coef_norm)
+    loader = DataLoader(data_set, batch_size=1)
+    print(f'\nValidating {mod} model trained on {foil} foils')
+    val_run(num_foils=foil, epochs=epoch_n, name_mod=mod, loader=loader, coef_norm=coef_norm, foil_range=foil_load, n_val_foils=n_val_foils, dpath=data_path)
