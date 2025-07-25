@@ -193,7 +193,7 @@ parser.add_argument('model', help = 'The model you want to train, choose between
 parser.add_argument('-f', '--foil_batch', help = 'Number of foils model was trained on', default = 55, type = int)
 parser.add_argument('-n', '--nfoils', help = 'Number of foils to train on', default = 60, type = int)
 parser.add_argument('-s', '--foil_start', help = 'Foil number to start from', default = 1770, type = int)
-parser.add_argument('-e_train', '--epochs', help = 'Number of epochs model was trained on', default = 400, type = int)
+parser.add_argument('-e', '--epochs', help = 'Number of epochs model was trained on', default = 400, type = int)
 args = parser.parse_args()
 
 if args.model == 'Full_Test':

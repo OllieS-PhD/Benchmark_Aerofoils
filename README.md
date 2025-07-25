@@ -67,9 +67,18 @@ python main.py GraphSAGE -f 20 -e 400
 
 ### Model Evaluation
 ```bash
-# Validation run
+# Test run
 # Runs through all four models at trained with each number of foils
-python validation.py
+python validation.py Full_Test
+
+# To run a test with a single model:
+python validation.py 'model' -f 'foil_batch' -n 'n_foils' -s 'foil_start' -e 'epochs'
+# Such that:
+'model', help = 'The model you want to train, choose between MLP, GraphSAGE, PointNet, GUNet, or Full_Test', type = str
+'-f', '--foil_batch', help = 'Number of foils model was trained on', default = 55, type = int
+'-n', '--nfoils', help = 'Number of foils to train on', default = 60, type = int
+'-s', '--foil_start', help = 'Foil number to start from', default = 1770, type = int
+'-e', '--epochs', help = 'Number of epochs model was trained on', default = 400, type = int
 ```
 
 
