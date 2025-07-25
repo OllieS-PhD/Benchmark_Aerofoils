@@ -6,7 +6,7 @@ set epochs=50 100 200 400
 
 for %%m in (%mod%) do (
 for %%f in (%foils%) do (
-python C:\Users\olive\Documents\Code\eXFoil\eX-Foil\main.py %%m -f %%f -e 400
+python .\main.py %%m -f %%f -e 400
 )
 )
-python C:\Users\olive\Documents\Code\eXFoil\eX-Foil\validation.py
+python .\validation.py
