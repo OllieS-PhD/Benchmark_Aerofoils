@@ -6,7 +6,7 @@ import json
 import h5py
 import argparse
 
-from normalise import normalise
+from normalise import normalise, load_normalisation_coefs
 from data.data_loader import data_loader
 from post_proc.panel_method import lift_ceof, err_data
 from train import test
@@ -166,27 +166,6 @@ def val_run(num_foils, epochs, name_mod, loader, coef_norm, foil_range, n_val_fo
         plt.close()
     # plt.show()
 
-def load_normalisation_coefs(log_file_path):
-    """
-    Load normalisation coefficients from a JSON log file.
-    
-    Args:
-        log_file_path (str): Path to the JSON log file
-        
-    Returns:
-        normalisation_coefs: The normalisation coefficients (numpy array or original format)
-    """
-    try:
-        with open(log_file_path, 'r') as f:
-            data = json.load(f)
-            normalisation_coefs = data.get('normalisation_coefs', None)
-            return normalisation_coefs
-    except FileNotFoundError:
-        print(f"File not found: {log_file_path}")
-        return None
-    except json.JSONDecodeError:
-        print(f"Invalid JSON in file: {log_file_path}")
-        return None
 
 parser = argparse.ArgumentParser()
 parser.add_argument('model', help = 'The model you want to train, choose between MLP, GraphSAGE, PointNet, GUNet, or Full_Test', type = str)
@@ -227,8 +206,7 @@ if task == 'full':
     pbar = tqdm(models, desc="Validating Models")
     for mod in pbar:
         for foil in foil_iter:
-            log_file_path = os.path.join('metrics', f'{foil}_foils', f'{400}_epochs' , mod, mod + '_log.json')
-            coef_norm = load_normalisation_coefs(log_file_path)
+            coef_norm = load_normalisation_coefs()
             data_set = normalise(data_set, coef_norm)
             loader = DataLoader(data_set, batch_size=1)
 
@@ -236,8 +214,7 @@ if task == 'full':
 else:
     mod = models[0]
     foil = foil_iter[0]
-    log_file_path = os.path.join('metrics', f'{foil}_foils', f'{400}_epochs' , mod, mod + '_log.json')
-    coef_norm = load_normalisation_coefs(log_file_path)
+    coef_norm = load_normalisation_coefs()
     data_set = normalise(data_set, coef_norm)
     loader = DataLoader(data_set, batch_size=1)
     print(f'\nValidating {mod} model trained on {foil} foils')

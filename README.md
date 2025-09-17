@@ -73,6 +73,7 @@ python validation.py Full_Test
 
 # To run a test with a single model:
 python validation.py 'model' -f 'foil_batch' -n 'n_foils' -s 'foil_start' -e 'epochs'
+
 # Such that:
 'model', help = 'The model you want to train, choose between MLP, GraphSAGE, PointNet, GUNet, or Full_Test', type = str
 '-f', '--foil_batch', help = 'Number of foils model was trained on', default = 55, type = int

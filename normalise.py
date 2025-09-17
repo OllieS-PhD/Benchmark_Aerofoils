@@ -1,5 +1,7 @@
 import numpy as np
 import torch
+import json
+import os
 
 def fit(dataset):
         # Umean = np.linalg.norm(data.x[:, 2:4], axis = 1).mean()     
@@ -39,29 +41,56 @@ def fit(dataset):
 
 def normalise(dataset, coeff_norm):
     mean_in, std_in, mean_out, std_out = coeff_norm
-    # Normalize
+
     for data in dataset:
-        data.x = torch.tensor((np.array(data.x) - mean_in)/(std_in + 1e-8)).to(torch.float32)
-        data.y = torch.tensor((np.array(data.y) - mean_out)/(std_out + 1e-8)).to(torch.float32)
+        data.x = torch.tensor((np.array(data.x) - mean_in)/(np.array(std_in) + 1e-8)).to(torch.float32)
+        data.y = torch.tensor((np.array(data.y) - mean_out)/(np.array(std_out) + 1e-8)).to(torch.float32)
         # print(data.x[2:3,:])
         # quit()       
     return dataset
+
+def norm_data(data, coeff_norm):
+    # data = data[0]
+    mean_in, std_in, mean_out, std_out = coeff_norm
+    data.x = torch.tensor((np.array(data.x) - mean_in)/(np.array(std_in) + 1e-8)).to(torch.float32)
+    data.y = torch.tensor((np.array(data.y) - mean_out)/(np.array(std_out) + 1e-8)).to(torch.float32)
+    return data
 
 def denormalise(dataset, coef_norm):
     mean_in, std_in, mean_out, std_out = coef_norm 
     for data in dataset:
         # data = data.cpu()
-        data.x = torch.tensor(( np.array(data.x) * (std_in+1e-8) ) + mean_in).to(torch.float32)
-        data.y = torch.tensor(( np.array(data.y) * (std_out+1e-8) ) + mean_out).to(torch.float32)
-    
+        data.x = torch.tensor(( np.array(data.x) * (np.array(std_in)+1e-8) ) + mean_in).to(torch.float32)
+        data.y = torch.tensor(( np.array(data.y) * (np.array(std_out)+1e-8) ) + mean_out).to(torch.float32)
+
     return dataset
 
 def denormalise_ys(dataset, coef_norm):
-    mean_in, std_in, mean_out, std_out = coef_norm 
+    mean_in, std_in, mean_out, std_out = coef_norm
     for l_data in dataset:
-        data = l_data[0].cpu()
-        # data = data.cpu()
-        data.x = torch.tensor(( np.array(data.x) * (std_out+1e-8) ) + mean_out).to(torch.float32)
-        data.y = torch.tensor(( np.array(data.y) * (std_out+1e-8) ) + mean_out).to(torch.float32)
-    
+        data = l_data.cpu()  # Fixed: removed [0] indexing
+        # data.x contains model predictions (outputs), so use output normalization coefficients
+        data.x = torch.tensor(( np.array(data.x) * (np.array(std_out)+1e-8) ) + mean_out).to(torch.float32)
+        # data.y contains ground truth outputs, also denormalize for comparison
+        data.y = torch.tensor(( np.array(data.y) * (np.array(std_out)+1e-8) ) + mean_out).to(torch.float32)
+
     return dataset
+
+def load_normalisation_coefs(log_file_path= os.path.join('data', 'total_coeffs_log.json')):
+    """
+    Args:
+        log_file_path (str): Path to the JSON log file
+    Returns:
+        normalisation_coefs: The normalisation coefficients (numpy array or original format)
+    """
+    try:
+        with open(log_file_path, 'r') as f:
+            data = json.load(f)
+            normalisation_coefs = data.get('normalisation_coefs', None)
+            return normalisation_coefs
+    except FileNotFoundError:
+        print(f"File not found: {log_file_path}")
+        return None
+    except json.JSONDecodeError:
+        print(f"Invalid JSON in file: {log_file_path}")
+        return None
